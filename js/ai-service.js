@@ -5,16 +5,27 @@
 
 class AIService {
     constructor() {
-        // Kimi API配置 - 优先使用外部配置文件，如果没有则使用默认值
-        // ⚠️ 重要：不要把真实的API Key硬编码在这里上传到GitHub！
-        // 方法1：创建config.js文件（在.gitignore中排除）
-        // 方法2：使用环境变量（需要构建工具）
-        // 方法3：部署后手动在服务器上修改config.js
-        this.API_KEY = (typeof CONFIG !== 'undefined' && CONFIG.API_KEY) ? CONFIG.API_KEY : '';
+        // Kimi API配置 - 从localStorage读取用户自己输入的Key
+        // ⚠️ 重要：API Key只存在用户浏览器本地，不会上传到GitHub
+        this.API_KEY = localStorage.getItem('openrouter_api_key') || '';
         this.API_URL = 'https://openrouter.ai/api/v1/chat/completions';
         this.MODEL = 'anthropic/claude-3.5-sonnet';
-        // 备用方案：如果Kimi失败，回退到模板
+        // 备用方案：如果AI失败，回退到模板
         this.useAI = true; // 默认启用AI
+    }
+
+    // 保存API Key到localStorage
+    saveAPIKey(key) {
+        this.API_KEY = key;
+        localStorage.setItem('openrouter_api_key', key);
+        console.log('[AI服务] API Key已保存到本地存储');
+    }
+
+    // 清除API Key
+    clearAPIKey() {
+        this.API_KEY = '';
+        localStorage.removeItem('openrouter_api_key');
+        console.log('[AI服务] API Key已清除');
     }
 
     /**

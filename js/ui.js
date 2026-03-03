@@ -81,20 +81,132 @@ const app = {
         console.log('[系统初始化] AI服务状态:', isAvailable ? '✅ 可用' : '❌ 不可用');
 
         if (isAvailable) {
-            // 测试API连接
-            console.log('[系统初始化] 测试API连接...');
-            const isConnected = await window.aiService.testConnection();
-
-            if (isConnected) {
-                console.log('[系统初始化] ✅ API连接正常，可以使用AI生成创意');
-                this.showNotification('✅ AI服务已就绪，可以使用AI生成创意', 'success');
-            } else {
-                console.error('[系统初始化] ❌ API连接失败，可能是额度用完或网络问题');
-                this.showNotification('⚠️ API连接失败，将使用模板生成创意。请检查OpenRouter额度。', 'warning');
-            }
+            console.log('[系统初始化] ✅ API Key已配置');
+            this.showNotification('✅ AI服务已配置，可以使用AI生成创意', 'success');
         } else {
             console.warn('[系统初始化] ⚠️ AI服务未配置（API Key无效）');
-            this.showNotification('⚠️ AI服务未配置，将使用模板生成创意', 'warning');
+            this.showNotification('⚠️ 请配置OpenRouter API Key以使用AI功能', 'warning');
+            // 显示API配置提示
+            this.showAPIConfigReminder();
+        }
+    },
+
+    // 显示API配置提醒
+    showAPIConfigReminder() {
+        const reminder = document.createElement('div');
+        reminder.id = 'api-config-reminder';
+        reminder.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #ff9800;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 1000;
+            max-width: 300px;
+            cursor: pointer;
+        `;
+        reminder.innerHTML = `
+            <div style="font-weight: bold; margin-bottom: 5px;">⚠️ API Key未配置</div>
+            <div style="font-size: 0.9rem;">点击配置OpenRouter API Key以使用AI生成</div>
+        `;
+        reminder.onclick = () => this.showAPIConfig();
+        document.body.appendChild(reminder);
+    },
+
+    // 显示API配置弹窗
+    showAPIConfig() {
+        // 移除提醒
+        const reminder = document.getElementById('api-config-reminder');
+        if (reminder) reminder.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'api-config-modal';
+        modal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        `;
+
+        const currentKey = window.aiService.API_KEY ?
+            window.aiService.API_KEY.substring(0, 10) + '...' : '未配置';
+
+        modal.innerHTML = `
+            <div style="background: var(--bg-secondary); padding: 30px; border-radius: 10px; max-width: 500px; width: 90%; border: 1px solid var(--border-color);">
+                <h3 style="margin-bottom: 20px;">🔑 配置 OpenRouter API Key</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 0.9rem;">
+                    API Key只保存在你的浏览器本地，不会上传到任何服务器。
+                </p>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold;">API Key:</label>
+                    <input type="password" id="api-key-input" placeholder="sk-or-v1-..."
+                        style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 5px; background: var(--bg-primary); color: var(--text-primary);"
+                        value="${window.aiService.API_KEY || ''}">
+                </div>
+                <div style="background: rgba(33,150,243,0.1); padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 0.85rem;">
+                    <strong>如何获取API Key:</strong><br>
+                    1. 访问 <a href="https://openrouter.ai/keys" target="_blank" style="color: var(--cinema-gold);">openrouter.ai/keys</a><br>
+                    2. 注册/登录账号<br>
+                    3. 点击 "Create Key"<br>
+                    4. 复制以 "sk-or-v1-" 开头的Key
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button onclick="app.hideAPIConfig()" style="padding: 10px 20px; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 5px; cursor: pointer;">取消</button>
+                    <button onclick="app.saveAPIKey()" style="padding: 10px 20px; background: var(--cinema-gold); color: var(--cinema-black); border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">保存</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    },
+
+    // 隐藏API配置弹窗
+    hideAPIConfig() {
+        const modal = document.getElementById('api-config-modal');
+        if (modal) modal.remove();
+    },
+
+    // 保存API Key
+    saveAPIKey() {
+        const input = document.getElementById('api-key-input');
+        const key = input.value.trim();
+
+        if (!key) {
+            alert('请输入API Key');
+            return;
+        }
+
+        if (!key.startsWith('sk-or-v1-')) {
+            alert('API Key格式不正确，应该以 "sk-or-v1-" 开头');
+            return;
+        }
+
+        // 保存到AI服务
+        window.aiService.saveAPIKey(key);
+
+        // 关闭弹窗
+        this.hideAPIConfig();
+
+        // 显示成功提示
+        this.showNotification('✅ API Key已保存！现在可以使用AI生成创意了', 'success');
+
+        console.log('[系统] API Key已保存');
+    },
+
+    // 清除API Key
+    clearAPIKey() {
+        if (confirm('确定要清除API Key吗？清除后将使用模板生成。')) {
+            window.aiService.clearAPIKey();
+            this.showNotification('API Key已清除', 'info');
         }
     },
 
@@ -236,7 +348,7 @@ const app = {
         }
     },
 
-    // ===== 生成5个创意供选择（使用AI生成）=====
+    // ===== 生成5个创意供选择（使用AI或模板生成）=====
     async generateIdeas() {
         this.showLoading('正在生成创意概念...');
 
@@ -256,14 +368,48 @@ const app = {
         console.log('[创意生成] 类型信息:', typeInfo?.name);
 
         try {
-            // 直接使用本地模板生成创意（不再调用AI，避免API Key问题）
-            console.log('[创意生成] 使用本地智能模板生成创意...');
-            let ideas = IDEA_GENERATOR.generateIdeas(this.selectedType, ideaCount);
+            let ideas = null;
 
-            console.log(`[创意生成] ✅ 成功生成${ideas.length}个创意`);
-            console.log('[创意生成] 创意标题:', ideas.map(i => i.title).join(', '));
+            // 检查是否有API Key
+            if (window.aiService && window.aiService.isAvailable()) {
+                console.log('[创意生成] ✅ 检测到API Key，尝试使用AI生成...');
 
-            this.showNotification(`✅ 成功生成${ideas.length}个创意！基于${typeInfo?.name}类型特色。`, 'success');
+                try {
+                    ideas = await window.aiService.generateCreativeIdeas(
+                        this.selectedType,
+                        typeInfo,
+                        ideaCount
+                    );
+
+                    if (ideas && ideas.length > 0) {
+                        console.log(`[创意生成] ✅ AI成功生成${ideas.length}个创意`);
+                        this.showNotification(`✅ AI成功生成${ideas.length}个创意！`, 'success');
+                    } else {
+                        console.warn('[创意生成] ⚠️ AI返回空，回退到模板');
+                        ideas = null;
+                    }
+                } catch (aiError) {
+                    console.error('[创意生成] ❌ AI生成失败:', aiError);
+                    console.warn('[创意生成] ⚠️ 回退到模板生成');
+                    ideas = null;
+                }
+            } else {
+                console.log('[创意生成] ℹ️ 未配置API Key，使用模板生成');
+            }
+
+            // 如果没有AI生成或失败了，使用模板
+            if (!ideas || ideas.length === 0) {
+                console.log('[创意生成] 使用本地智能模板生成创意...');
+                ideas = IDEA_GENERATOR.generateIdeas(this.selectedType, ideaCount);
+
+                if (!window.aiService || !window.aiService.isAvailable()) {
+                    this.showNotification(`✅ 已生成${ideas.length}个创意！（配置API Key可使用AI生成）`, 'success');
+                } else {
+                    this.showNotification(`✅ 成功生成${ideas.length}个创意！`, 'success');
+                }
+            }
+
+            console.log(`[创意生成] 创意标题:`, ideas.map(i => i.title).join(', '));
 
             console.log('[创意生成] 即将设置generatedIdeas, 数量:', ideas.length);
             this.generatedIdeas = ideas;
@@ -582,16 +728,70 @@ const app = {
         this.showLoading('正在生成详细人物设定...');
 
         try {
-            // 使用本地模板生成角色（不再调用AI，避免API Key泄露问题）
-            console.log('[角色生成] 使用本地模板生成角色...');
-            this.generateCharactersFromTemplate();
+            let characters = null;
+
+            // 检查是否有API Key
+            if (window.aiService && window.aiService.isAvailable()) {
+                console.log('[角色生成] ✅ 检测到API Key，尝试使用AI生成...');
+
+                try {
+                    const aiCharacters = await window.aiService.generateCharactersWithAI(
+                        creative,
+                        typeInfo,
+                        6
+                    );
+
+                    if (aiCharacters && aiCharacters.length > 0) {
+                        console.log(`[角色生成] ✅ AI成功生成${aiCharacters.length}个角色`);
+
+                        // 清空现有AI角色，保留手动添加的
+                        this.engine.project.characters = this.engine.project.characters.filter(char => !char.isAIGenerated);
+
+                        // 添加AI生成的角色
+                        aiCharacters.forEach((char) => {
+                            this.engine.addCharacter({
+                                name: char.name,
+                                gender: char.role === 'love-interest' && typeInfo.category === 'female' ? 'male' : 'female',
+                                age: char.detailedInfo?.age || '25',
+                                role: char.role,
+                                bio: char.desc,
+                                detailedInfo: char.detailedInfo,
+                                relationships: '',
+                                isAIGenerated: true
+                            });
+                        });
+
+                        this.renderCharacterList();
+                        characters = aiCharacters;
+                    } else {
+                        console.warn('[角色生成] ⚠️ AI返回空，回退到模板');
+                        characters = null;
+                    }
+                } catch (aiError) {
+                    console.error('[角色生成] ❌ AI生成失败:', aiError);
+                    console.warn('[角色生成] ⚠️ 回退到模板生成');
+                    characters = null;
+                }
+            } else {
+                console.log('[角色生成] ℹ️ 未配置API Key，使用模板生成');
+            }
+
+            // 如果没有AI生成或失败了，使用模板
+            if (!characters || characters.length === 0) {
+                this.generateCharactersFromTemplate();
+            }
 
             // 记录生成角色时的类型
             this.charactersType = this.selectedType;
             this.saveProject();
 
             this.hideLoading();
-            alert('✅ 人物生成完成！6个角色已生成（主角、恋爱对象、主要反派、次要反派、闺蜜、喜剧角色），点击角色查看详细小传');
+
+            if (window.aiService && window.aiService.isAvailable()) {
+                alert('✅ 人物生成完成！6个角色已生成（主角、恋爱对象、主要反派、次要反派、闺蜜、喜剧角色），点击角色查看详细小传');
+            } else {
+                alert('✅ 人物生成完成！（配置API Key可使用AI生成更详细设定）');
+            }
 
         } catch (error) {
             console.error('人物生成失败:', error);
@@ -1052,7 +1252,7 @@ ${char.bio || '暂无'}
 
     // ===== 标题生成与选择 =====
     async generateTitles() {
-        this.showLoading('AI正在生成标题选项...');
+        this.showLoading('正在生成标题选项...');
 
         try {
             // 确保项目数据完整
@@ -1073,14 +1273,41 @@ ${char.bio || '暂无'}
                 }
             }
 
-            // 确保角色数据存在
-            if (!this.engine.project.characters || this.engine.project.characters.length === 0) {
-                console.warn('[标题生成] 角色数据为空，使用当前角色');
+            let titles = null;
+
+            // 检查是否有API Key
+            if (window.aiService && window.aiService.isAvailable()) {
+                console.log('[标题生成] ✅ 检测到API Key，尝试使用AI生成...');
+
+                try {
+                    // 确保角色数据存在
+                    if (!this.engine.project.characters || this.engine.project.characters.length === 0) {
+                        console.warn('[标题生成] 角色数据为空，使用当前角色');
+                    }
+
+                    const aiTitles = await window.aiService.generateTitles(this.engine.project);
+
+                    if (aiTitles && aiTitles.length > 0) {
+                        console.log(`[标题生成] ✅ AI成功生成${aiTitles.length}个标题`);
+                        titles = aiTitles;
+                    } else {
+                        console.warn('[标题生成] ⚠️ AI返回空，回退到模板');
+                        titles = null;
+                    }
+                } catch (aiError) {
+                    console.error('[标题生成] ❌ AI生成失败:', aiError);
+                    console.warn('[标题生成] ⚠️ 回退到模板生成');
+                    titles = null;
+                }
+            } else {
+                console.log('[标题生成] ℹ️ 未配置API Key，使用模板生成');
             }
 
-            // 使用本地模板生成标题（不再调用AI，避免API Key泄露问题）
-            console.log('[标题生成] 使用本地模板生成标题...');
-            const titles = this.generateTitlesFromTemplate();
+            // 如果没有AI生成或失败了，使用模板
+            if (!titles || titles.length === 0) {
+                titles = this.generateTitlesFromTemplate();
+            }
+
             this.generatedTitles = titles;
 
             // 记录生成标题时的类型
