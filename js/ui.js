@@ -238,7 +238,7 @@ const app = {
 
     // ===== 生成5个创意供选择（使用AI生成）=====
     async generateIdeas() {
-        this.showLoading('正在AI生成创意概念...');
+        this.showLoading('正在生成创意概念...');
 
         const typeInfo = DRAMA_TYPES[this.selectedType];
         const ideaCount = 5; // 统一改为5个
@@ -250,54 +250,20 @@ const app = {
             this.engine.project.selectedIdea = null;
             this.engine.project.creative = null;
         }
-        console.log('%c[创意生成] 开始生成流程（已重置选择状态）', 'background: #2196F3; color: white; padding: 4px 8px; border-radius: 4px;');
-        console.log('[创意生成] 检查AI服务状态:');
-        console.log('  - window.aiService存在:', !!window.aiService);
-        console.log('  - window.aiService.isAvailable():', window.aiService?.isAvailable?.());
-        console.log('  - 选择的类型:', this.selectedType);
-        console.log('  - 类型信息:', typeInfo?.name);
+
+        console.log('%c[创意生成] 开始生成流程', 'background: #2196F3; color: white; padding: 4px 8px; border-radius: 4px;');
+        console.log('[创意生成] 选择的类型:', this.selectedType);
+        console.log('[创意生成] 类型信息:', typeInfo?.name);
 
         try {
-            // 尝试使用AI生成创意
-            let ideas = null;
-            if (window.aiService && window.aiService.isAvailable()) {
-                console.log('[创意生成] ✅ AI服务可用，准备调用AI生成创意...');
+            // 直接使用本地模板生成创意（不再调用AI，避免API Key问题）
+            console.log('[创意生成] 使用本地智能模板生成创意...');
+            let ideas = IDEA_GENERATOR.generateIdeas(this.selectedType, ideaCount);
 
-                ideas = await window.aiService.generateCreativeIdeas(
-                    this.selectedType,
-                    typeInfo,
-                    ideaCount
-                );
+            console.log(`[创意生成] ✅ 成功生成${ideas.length}个创意`);
+            console.log('[创意生成] 创意标题:', ideas.map(i => i.title).join(', '));
 
-                console.log('[创意生成] AI返回结果:', ideas);
-            } else {
-                console.warn('[创意生成] ❌ AI服务不可用:');
-                console.warn('  - window.aiService存在:', !!window.aiService);
-                if (window.aiService) {
-                    console.warn('  - isAvailable():', window.aiService.isAvailable());
-                    console.warn('  - useAI:', window.aiService.useAI);
-                    console.warn('  - API_KEY长度:', window.aiService.API_KEY?.length);
-                }
-
-                // 显示用户提示
-                if (!window.aiService) {
-                    this.showNotification('AI服务未加载，将使用模板生成创意。请刷新页面重试。', 'error');
-                } else if (!window.aiService.isAvailable()) {
-                    this.showNotification('AI服务未配置，将使用模板生成创意。请检查API Key设置。', 'warning');
-                }
-            }
-
-            // 如果AI生成失败或不可用，回退到模板生成
-            if (!ideas || ideas.length === 0) {
-                console.warn('[创意生成] ⚠️ AI生成失败或返回空，回退到模板生成');
-                this.showNotification('AI服务暂不可用，使用模板生成创意。请检查API设置。', 'warning');
-                ideas = IDEA_GENERATOR.generateIdeas(this.selectedType, ideaCount);
-                console.log('[创意生成] 模板生成结果:', ideas);
-            } else {
-                console.log(`[创意生成] ✅ 成功生成${ideas.length}个创意（AI）`);
-                console.log('[创意生成] 创意标题:', ideas.map(i => i.title).join(', '));
-                this.showNotification(`✅ 成功生成${ideas.length}个AI创意！这些创意基于不同的职业背景。`, 'success');
-            }
+            this.showNotification(`✅ 成功生成${ideas.length}个创意！基于${typeInfo?.name}类型特色。`, 'success');
 
             console.log('[创意生成] 即将设置generatedIdeas, 数量:', ideas.length);
             this.generatedIdeas = ideas;
@@ -310,8 +276,8 @@ const app = {
             console.error('[创意生成] 错误详情:', error.message);
             console.error('[创意生成] 错误堆栈:', error.stack);
 
-            // 出错时使用模板
-            console.warn('[创意生成] 使用模板作为最终回退');
+            // 出错时使用默认模板
+            console.warn('[创意生成] 使用默认模板作为最终回退');
             this.generatedIdeas = IDEA_GENERATOR.generateIdeas(this.selectedType, ideaCount);
             this.ideasType = this.selectedType;
             this.renderIdeaSelection();
@@ -613,50 +579,24 @@ const app = {
             return;
         }
 
-        this.showLoading('AI正在生成详细人物设定...');
+        this.showLoading('正在生成详细人物设定...');
 
         try {
-            // 调用AI服务生成详细人物（6个角色）
-            const aiCharacters = await aiService.generateCharactersWithAI(
-                creative,
-                typeInfo,
-                6
-            );
-
-            // 只清空AI生成的角色，保留手动添加的角色
-            this.engine.project.characters = this.engine.project.characters.filter(char => !char.isAIGenerated);
-
-            // 添加AI生成的角色（同步添加，不使用setTimeout）
-            aiCharacters.forEach((char) => {
-                this.engine.addCharacter({
-                    name: char.name,
-                    gender: char.role === 'love-interest' && typeInfo.category === 'female' ? 'male' : 'female',
-                    age: char.detailedInfo?.age || '25',
-                    role: char.role,
-                    bio: char.desc,
-                    detailedInfo: char.detailedInfo, // 保存详细信息
-                    relationships: '',
-                    isAIGenerated: true
-                });
-            });
-
-            // 添加完成后立即渲染列表
-            this.renderCharacterList();
+            // 使用本地模板生成角色（不再调用AI，避免API Key泄露问题）
+            console.log('[角色生成] 使用本地模板生成角色...');
+            this.generateCharactersFromTemplate();
 
             // 记录生成角色时的类型
             this.charactersType = this.selectedType;
             this.saveProject();
 
             this.hideLoading();
-            alert('✅ AI人物生成完成！6个角色已生成（主角、恋爱对象、主要反派、次要反派、闺蜜、喜剧角色），点击角色查看详细小传');
+            alert('✅ 人物生成完成！6个角色已生成（主角、恋爱对象、主要反派、次要反派、闺蜜、喜剧角色），点击角色查看详细小传');
 
         } catch (error) {
-            console.error('AI人物生成失败:', error);
+            console.error('人物生成失败:', error);
             this.hideLoading();
-            alert('AI人物生成失败: ' + error.message + '\n将使用模板生成');
-
-            // 失败时使用模板
-            this.generateCharactersFromTemplate();
+            alert('人物生成失败，请重试');
         }
     },
 
@@ -1138,8 +1078,9 @@ ${char.bio || '暂无'}
                 console.warn('[标题生成] 角色数据为空，使用当前角色');
             }
 
-            // 调用AI服务生成标题
-            const titles = await aiService.generateTitles(this.engine.project);
+            // 使用本地模板生成标题（不再调用AI，避免API Key泄露问题）
+            console.log('[标题生成] 使用本地模板生成标题...');
+            const titles = this.generateTitlesFromTemplate();
             this.generatedTitles = titles;
 
             // 记录生成标题时的类型
@@ -1154,6 +1095,50 @@ ${char.bio || '暂无'}
             this.hideLoading();
             alert('生成标题失败: ' + (error.message || '未知错误'));
         }
+    },
+
+    // 使用本地模板生成标题
+    generateTitlesFromTemplate() {
+        const typeInfo = DRAMA_TYPES[this.selectedType];
+        const typeName = typeInfo?.name || 'Short Drama';
+        const category = typeInfo?.category || 'female';
+
+        // 根据类型特色生成不同的标题
+        const titles = [];
+
+        if (category === 'female') {
+            // 女频标题模板
+            const templates = [
+                { main: `The ${typeName.split('/')[0]}'s Secret Love`, sub: `${typeName}的隐秘爱情` },
+                { main: `Falling for the ${typeName.split('/')[0]}`, sub: `爱上${typeName}` },
+                { main: `Contract with the ${typeName.split('/')[0]}`, sub: `与${typeName}的契约` },
+                { main: `The ${typeName.split('/')[0]}'s Obsession`, sub: `${typeName}的执着` },
+                { main: `Trapped by the ${typeName.split('/')[0]}`, sub: `被${typeName}困住` }
+            ];
+            titles.push(...templates);
+        } else if (category === 'male') {
+            // 男频标题模板
+            const templates = [
+                { main: `The ${typeName.split('/')[0]} King`, sub: `${typeName}之王` },
+                { main: `Revenge of the ${typeName.split('/')[0]}`, sub: `${typeName}复仇记` },
+                { main: `I Am the ${typeName.split('/')[0]}`, sub: `我就是${typeName}` },
+                { main: `Hidden ${typeName.split('/')[0]} Identity`, sub: `隐藏的${typeName}身份` },
+                { main: `The ${typeName.split('/')[0]} Strikes Back`, sub: `${typeName}反击` }
+            ];
+            titles.push(...templates);
+        } else {
+            // 通用标题模板
+            const templates = [
+                { main: `The ${typeName.split('/')[0]} Mystery`, sub: `${typeName}之谜` },
+                { main: `${typeName.split('/')[0]} Chronicles`, sub: `${typeName}编年史` },
+                { main: `Secrets of ${typeName.split('/')[0]}`, sub: `${typeName}的秘密` },
+                { main: `The Last ${typeName.split('/')[0]}`, sub: `最后的${typeName}` },
+                { main: `${typeName.split('/')[0]} Revealed`, sub: `${typeName}揭秘` }
+            ];
+            titles.push(...templates);
+        }
+
+        return titles;
     },
 
     renderTitleSelection() {
