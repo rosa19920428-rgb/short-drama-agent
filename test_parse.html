@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>解析函数诊断工具</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        textarea { width: 100%; height: 300px; font-family: monospace; font-size: 12px; }
+        button { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 10px 0; }
+        button:hover { background: #45a049; }
+        .result { background: #f5f5f5; padding: 15px; border-radius: 4px; margin-top: 20px; }
+        .idea-card { background: white; border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 4px; }
+        .error { color: red; }
+        .success { color: green; }
+        pre { white-space: pre-wrap; word-wrap: break-word; background: #f8f8f8; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>创意解析函数诊断工具</h1>
+
+        <h3>步骤1: 粘贴浏览器控制台中的 AI原始响应内容</h3>
+        <p>在浏览器控制台找到 <code>[AI服务] AI原始响应内容:</code>，复制下面的所有内容粘贴到这里：</p>
+        <textarea id="aiResponse" placeholder="粘贴AI返回的原始文本..."></textarea>
+
+        <button onclick="testParse()">测试解析</button>
+        <button onclick="clearAll()">清空</button>
+
+        <div id="results" class="result" style="display:none;">
+            <h3>解析结果：</h3>
+            <div id="summary"></div>
+            <div id="ideasList"></div>
+        </div>
+    </div>
+
+    <script>
+        // 复制解析函数的逻辑（简化版）
+        function parseCreativeIdeas(content) {
+            const ideas = [];
+            const lines = content.split('\n');
+            let currentIdea = null;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+
+                // 检查是否是新的创意开始
+                const ideaStartMatch = line.match(/^(?:创意\s*(\d+)[：:]?|(\d+)[\.\、])[\s\-–•\*]*(.*)$/i);
+
+                if (ideaStartMatch) {
+                    // 保存之前的创意
+                    if (currentIdea) {
+                        ideas.push(currentIdea);
+                    }
+
+                    // 创建新创意
+                    currentIdea = {
+                        title: '',
+                        concept: '',
+                        synopsis: ''
+                    };
+
+                    // 如果这一行后面还有内容（如"创意1：标题"），提取为标题
+                    const remainder = ideaStartMatch[3]?.trim();
+                    if (remainder) {
+                        const titleMatch = remainder.match(/^标题[：:]\s*(.+)/i);
+                        if (titleMatch) {
+                            currentIdea.title = titleMatch[1].trim();
+                        } else {
+                            currentIdea.title = remainder;
+                        }
+                    }
+
+                    continue;
+                }
+
+                // 如果没有当前创意，跳过
+                if (!currentIdea) continue;
+
+                // 匹配标题行
+                const titleMatch = line.match(/^标题[：:]\s*(.+)/i);
+                if (titleMatch) {
+                    currentIdea.title = titleMatch[1].trim();
+                    continue;
+                }
+
+                // 匹配概念行
+                const conceptMatch = line.match(/^概念[：:]\s*(.+)/i);
+                if (conceptMatch) {
+                    currentIdea.concept = conceptMatch[1].trim();
+                    continue;
+                }
+
+                // 匹配梗概行（开始）
+                const synopsisMatch = line.match(/^梗概[：:]\s*(.+)/i);
+                if (synopsisMatch) {
+                    currentIdea.synopsis = synopsisMatch[1].trim();
+                    currentIdea._parsingSynopsis = true;
+                    continue;
+                }
+
+                // 匹配外在期待
+                const externalHookMatch = line.match(/^(?:外在期待|外在钩子|核心期待|外在事件)[：:]\s*(.+)/i);
+                if (externalHookMatch) {
+                    currentIdea.externalHook = externalHookMatch[1].trim();
+                    currentIdea.hook = currentIdea.externalHook;
+                    currentIdea._parsingSynopsis = false;
+                    continue;
+                }
+
+                // 匹配内在期待
+                const internalHookMatch = line.match(/^(?:内在期待|内在钩子|情感钩子|内在情感)[：:]\s*(.+)/i);
+                if (internalHookMatch) {
+                    currentIdea.internalHook = internalHookMatch[1].trim();
+                    currentIdea._parsingSynopsis = false;
+                    continue;
+                }
+
+                // 如果正在解析梗概，且当前行不是新字段的开始，则追加到梗概
+                if (currentIdea?._parsingSynopsis && line) {
+                    if (line.match(/^(?:创意\s*\d+|\d+[\.\、])[：:]/i)) {
+                        currentIdea._parsingSynopsis = false;
+                    } else if (!line.match(/^(标题|概念|外在|内在)[：:]/i)) {
+                        currentIdea.synopsis += ' ' + line;
+                    }
+                }
+            }
+
+            // 保存最后一个创意
+            if (currentIdea) {
+                ideas.push(currentIdea);
+            }
+
+            return ideas.filter(idea => idea.title || idea.concept).map((idea, index) => ({
+                id: `idea-test-${index}`,
+                title: idea.title || 'Untitled',
+                concept: idea.concept || idea.title || 'No concept',
+                synopsis: idea.synopsis || idea.concept || 'No synopsis',
+                externalHook: idea.externalHook || idea.hook || '悬念待揭晓',
+                internalHook: idea.internalHook || '情感发展待展开',
+                hook: idea.externalHook || idea.hook || '悬念待揭晓'
+            }));
+        }
+
+        function testParse() {
+            const content = document.getElementById('aiResponse').value;
+            if (!content.trim()) {
+                alert('请先粘贴AI原始响应内容');
+                return;
+            }
+
+            console.log('开始解析，内容长度:', content.length);
+            console.log('内容前200字符:', content.substring(0, 200));
+
+            try {
+                const ideas = parseCreativeIdeas(content);
+                console.log('解析结果:', ideas);
+
+                displayResults(ideas);
+            } catch (error) {
+                console.error('解析错误:', error);
+                document.getElementById('results').style.display = 'block';
+                document.getElementById('summary').innerHTML = `
+                    <p class="error"><strong>解析错误:</strong> ${error.message}</p>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        }
+
+        function displayResults(ideas) {
+            document.getElementById('results').style.display = 'block';
+
+            // 显示摘要
+            const summaryHtml = `
+                <p><strong>解析到的创意数量:</strong> ${ideas.length}</p>
+                <p><strong>状态:</strong> ${ideas.length === 5 ? '<span class="success">✅ 正确</span>' : '<span class="error">❌ 错误 (期望5个)</span>'}</p>
+                <hr>
+            `;
+            document.getElementById('summary').innerHTML = summaryHtml;
+
+            // 显示每个创意
+            let ideasHtml = '';
+            ideas.forEach((idea, index) => {
+                const synopsisLength = idea.synopsis ? idea.synopsis.length : 0;
+                const synopsisStatus = synopsisLength >= 400 && synopsisLength <= 500 ?
+                    '<span class="success">✅ 长度符合</span>' :
+                    `<span class="error">❌ 长度不足 (${synopsisLength}字)</span>`;
+
+                ideasHtml += `
+                    <div class="idea-card">
+                        <h4>创意 #${index + 1}</h4>
+                        <p><strong>标题:</strong> ${idea.title}</p>
+                        <p><strong>概念:</strong> ${idea.concept}</p>
+                        <p><strong>梗概长度:</strong> ${synopsisStatus}</p>
+                        <p><strong>梗概预览:</strong> ${idea.synopsis ? idea.synopsis.substring(0, 100) + '...' : '空'}</p>
+                        <p><strong>外在期待:</strong> ${idea.externalHook}</p>
+                        <p><strong>内在期待:</strong> ${idea.internalHook}</p>
+                        <details>
+                            <summary>查看完整梗概</summary>
+                            <pre>${idea.synopsis}</pre>
+                        </details>
+                    </div>
+                `;
+            });
+
+            document.getElementById('ideasList').innerHTML = ideasHtml;
+        }
+
+        function clearAll() {
+            document.getElementById('aiResponse').value = '';
+            document.getElementById('results').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

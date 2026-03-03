@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Short Drama Script Agent | 竖屏短剧剧本生成器</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Password Protection Overlay -->
+    <div id="password-overlay" class="password-overlay">
+        <div class="password-box">
+            <h2>🔒 受保护的创作工具</h2>
+            <p>请输入访问密码以继续使用</p>
+            <div class="password-form">
+                <input type="password" id="access-password" placeholder="输入密码..." onkeypress="if(event.key==='Enter')app.checkPassword()">
+                <button onclick="app.checkPassword()">进入系统</button>
+            </div>
+            <p id="password-error" class="password-error hidden">密码错误，请重试</p>
+            <p class="password-hint">联系网站所有者获取访问权限</p>
+        </div>
+    </div>
+
+    <div class="app" id="main-app" style="display: none;">
+        <!-- Header -->
+        <header class="header">
+            <h1>📺 Short Drama Script Agent</h1>
+            <p>专业的竖屏短剧剧本生成系统 | 30-50集完整剧集 | 渐进式创作工作流</p>
+        </header>
+
+        <!-- Main Navigation -->
+        <nav class="main-nav">
+            <button class="nav-btn active" data-section="dashboard">
+                <span class="icon">🏠</span>
+                <span>工作台</span>
+            </button>
+            <button class="nav-btn" data-section="projects">
+                <span class="icon">📁</span>
+                <span>我的项目</span>
+            </button>
+            <button class="nav-btn" data-section="templates">
+                <span class="icon">📚</span>
+                <span>类型库</span>
+            </button>
+        </nav>
+
+        <!-- Dashboard / Workspace -->
+        <section id="dashboard" class="section active">
+            <div class="workspace">
+                <!-- 左侧：工作流导航 -->
+                <aside class="workflow-sidebar">
+                    <h3>创作工作流</h3>
+                    <div class="workflow-steps">
+                        <div class="step-item active" data-step="1" onclick="app.goToStep(1)">
+                            <span class="step-num">1</span>
+                            <div class="step-info">
+                                <h4>选择类型</h4>
+                                <p>选择板块和类型</p>
+                            </div>
+                        </div>
+                        <div class="step-item" data-step="2" onclick="app.goToStep(2)">
+                            <span class="step-num">2</span>
+                            <div class="step-info">
+                                <h4>创意讨论</h4>
+                                <p>与AI讨论核心创意</p>
+                            </div>
+                        </div>
+                        <div class="step-item" data-step="3" onclick="app.goToStep(3)">
+                            <span class="step-num">3</span>
+                            <div class="step-info">
+                                <h4>角色设计</h4>
+                                <p>创建和细化人物</p>
+                            </div>
+                        </div>
+                        <div class="step-item" data-step="4" onclick="app.goToStep(4)">
+                            <span class="step-num">4</span>
+                            <div class="step-info">
+                                <h4>标题选择</h4>
+                                <p>选择最吸引人的标题</p>
+                            </div>
+                        </div>
+                        <div class="step-item" data-step="5" onclick="app.goToStep(5)">
+                            <span class="step-num">5</span>
+                            <div class="step-info">
+                                <h4>分集大纲</h4>
+                                <p>30-50集剧情规划</p>
+                            </div>
+                        </div>
+                        <div class="step-item" data-step="6" onclick="app.goToStep(6)">
+                            <span class="step-num">6</span>
+                            <div class="step-info">
+                                <h4>完整剧本</h4>
+                                <p>生成全部剧本</p>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- 右侧：工作区 -->
+                <main class="workspace-main">
+
+                    <!-- Step 1: 类型选择 -->
+                    <div class="step-panel active" data-step="1">
+                        <h2>选择板块和类型</h2>
+                        <div class="category-selector">
+                            <div class="category-tabs">
+                                <button class="cat-tab active" data-category="female">
+                                    <span>💕</span>
+                                    <span>女频短剧</span>
+                                </button>
+                                <button class="cat-tab" data-category="male">
+                                    <span>🔥</span>
+                                    <span>男频爽剧</span>
+                                </button>
+                                <button class="cat-tab" data-category="general">
+                                    <span>🎬</span>
+                                    <span>通用题材</span>
+                                </button>
+                            </div>
+
+                            <div class="type-panels">
+                                <!-- Female Types -->
+                                <div class="type-panel active" data-category="female">
+                                    <h3>选择具体类型</h3>
+                                    <div class="type-list">
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="billionaire-ceo" checked>
+                                            <div class="type-card">
+                                                <span class="icon">👔</span>
+                                                <div>
+                                                    <h4>霸道总裁</h4>
+                                                    <p>契约开始 · 身份悬殊 · 先虐后甜</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="mafia">
+                                            <div class="type-card">
+                                                <span class="icon">🖤</span>
+                                                <div>
+                                                    <h4>黑手党/黑帮</h4>
+                                                    <p>禁忌之恋 · 危险世界 · 保护与背叛</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="werewolf">
+                                            <div class="type-card">
+                                                <span class="icon">🐺</span>
+                                                <div>
+                                                    <h4>狼人/超自然</h4>
+                                                    <p>命中注定 · 变身秘密 · 族群规则</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="american-campus">
+                                            <div class="type-card">
+                                                <span class="icon">🎓</span>
+                                                <div>
+                                                    <h4>美式青春校园</h4>
+                                                    <p>破处压力 · popularity阶级 · 派对文化 · 性觉醒</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="revenge-rebirth">
+                                            <div class="type-card">
+                                                <span class="icon">⚡</span>
+                                                <div>
+                                                    <h4>重生复仇</h4>
+                                                    <p>改变命运 · 前世背叛 · 打脸反派</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Male Types -->
+                                <div class="type-panel" data-category="male">
+                                    <h3>选择具体类型</h3>
+                                    <div class="type-list">
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="underdog-revenge">
+                                            <div class="type-card">
+                                                <span class="icon">💪</span>
+                                                <div>
+                                                    <h4>逆袭打脸</h4>
+                                                    <p>被轻视→展现实力→震惊众人</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="secret-identity">
+                                            <div class="type-card">
+                                                <span class="icon">🎭</span>
+                                                <div>
+                                                    <h4>隐藏身份</h4>
+                                                    <p>表面屌丝·实际大佬·扫地僧</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="apocalypse-king">
+                                            <div class="type-card">
+                                                <span class="icon">☠️</span>
+                                                <div>
+                                                    <h4>末日生存王者</h4>
+                                                    <p>丧尸/灾难→建立秩序→废土之王</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="system-powers">
+                                            <div class="type-card">
+                                                <span class="icon">⚡</span>
+                                                <div>
+                                                    <h4>系统/超能力觉醒</h4>
+                                                    <p>获得作弊能力→快速升级→无敌</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="military-returns">
+                                            <div class="type-card">
+                                                <span class="icon">🎖️</span>
+                                                <div>
+                                                    <h4>军事/特工归来</h4>
+                                                    <p>最强战士→家人被欺→血洗敌人</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="harem-desired">
+                                            <div class="type-card">
+                                                <span class="icon">👑</span>
+                                                <div>
+                                                    <h4>多女主/被追逐</h4>
+                                                    <p>多女主追求·平凡男主变万人迷</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- General Types -->
+                                <div class="type-panel" data-category="general">
+                                    <h3>选择具体类型</h3>
+                                    <div class="type-list">
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="mystery-crime">
+                                            <div class="type-card">
+                                                <span class="icon">🔍</span>
+                                                <div>
+                                                    <h4>悬疑/罪案</h4>
+                                                    <p>多重嫌疑人·红鲱鱼·真相反转</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="psychological-thriller">
+                                            <div class="type-card">
+                                                <span class="icon">🧠</span>
+                                                <div>
+                                                    <h4>心理惊悚</h4>
+                                                    <p>不可靠叙述者·现实幻觉边界</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="supernatural-horror">
+                                            <div class="type-card">
+                                                <span class="icon">👻</span>
+                                                <div>
+                                                    <h4>超自然恐怖</h4>
+                                                    <p>鬼怪·诅咒·附身·古老秘密</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="action-spy">
+                                            <div class="type-card">
+                                                <span class="icon">🔫</span>
+                                                <div>
+                                                    <h4>动作/谍战</h4>
+                                                    <p>限时任务·双重身份·背叛</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="sci-fi">
+                                            <div class="type-card">
+                                                <span class="icon">🚀</span>
+                                                <div>
+                                                    <h4>科幻</h4>
+                                                    <p>科技伦理·生存危机·时空概念</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="survival">
+                                            <div class="type-card">
+                                                <span class="icon">🏔️</span>
+                                                <div>
+                                                    <h4>生存冒险</h4>
+                                                    <p>极端环境·资源匮乏·人性考验</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="dark-comedy-crime">
+                                            <div class="type-card">
+                                                <span class="icon">😈</span>
+                                                <div>
+                                                    <h4>黑色幽默犯罪</h4>
+                                                    <p>荒诞犯罪·计划出错·讽刺</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                        <label class="type-option">
+                                            <input type="radio" name="type" value="social-drama">
+                                            <div class="type-card">
+                                                <span class="icon">🎭</span>
+                                                <div>
+                                                    <h4>社会议题剧</h4>
+                                                    <p>当下热点·道德困境·多方视角</p>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="next-btn" onclick="app.nextStep()">进入创意讨论 →</button>
+                        <p style="color: var(--text-secondary); margin-top: 10px; font-size: 0.9rem;">
+                            💡 集数和时长配置已移至"分集大纲"步骤，您可以在生成大纲前自由选择
+                        </p>
+                    </div>
+
+                    <!-- Step 2: 创意选择 -->
+                    <div class="step-panel" data-step="2">
+                        <h2>创意选择</h2>
+                        <p class="step-desc">从AI生成的创意概念中选择一个，或自由讨论你的创意</p>
+
+                        <div id="idea-selection-panel">
+                            <div style="text-align: center; padding: 40px;">
+                                <p style="color: var(--text-secondary); margin-bottom: 20px;">点击按钮生成创意概念供选择</p>
+                                <button class="btn-primary" onclick="app.generateIdeas()">生成创意概念</button>
+                            </div>
+                        </div>
+
+                        <div class="step-actions" style="margin-top: 30px; border-top: 1px solid var(--cinema-gray); padding-top: 20px;">
+                            <button class="btn-secondary" onclick="app.prevStep()">← 返回</button>
+                            <button class="next-btn" onclick="app.goToStep(3)" ${!app.selectedIdea ? 'disabled' : ''}>进入角色设计 →</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 3: 角色设计 -->
+                    <div class="step-panel" data-step="3">
+                        <h2>角色设计</h2>
+                        <p class="step-desc">创建主要角色，AI会根据类型自动推荐标准配角</p>
+
+                        <div class="character-workspace">
+                            <div class="character-list" id="character-list">
+                                <!-- 角色列表将在这里生成 -->
+                            </div>
+
+                            <div class="character-editor">
+                                <h4>添加/编辑角色</h4>
+                                <div class="form-group">
+                                    <label>角色姓名</label>
+                                    <input type="text" id="char-name" placeholder="角色姓名">
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>性别</label>
+                                        <select id="char-gender">
+                                            <option value="female">女</option>
+                                            <option value="male">男</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>年龄</label>
+                                        <input type="text" id="char-age" placeholder="如：25岁">
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>角色类型</label>
+                                    <select id="char-type">
+                                        <option value="protagonist">主角（女性）</option>
+                                        <option value="love-interest">恋爱对象（男性CEO）</option>
+                                        <option value="antagonist">主要反派（情敌/商业反派）</option>
+                                        <option value="antagonist2">次要反派（制造麻烦者）</option>
+                                        <option value="supporting">闺蜜/好友（情感支持）</option>
+                                        <option value="supporting2">喜剧角色/同事（缓解气氛）</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>人物小传（性格、背景、动机）</label>
+                                    <textarea id="char-bio" rows="4" placeholder="描述这个角色的性格特点、成长背景、内心动机..."></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>与其他角色的关系</label>
+                                    <textarea id="char-relationships" rows="2" placeholder="如：与主角是青梅竹马，与反派是姐弟..."></textarea>
+                                </div>
+                                <div class="form-actions">
+                                    <button class="btn-secondary" onclick="app.clearCharacterForm()">清空</button>
+                                    <button class="btn-primary" onclick="app.saveCharacter()">保存角色</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="step-actions">
+                            <button class="btn-secondary" onclick="app.prevStep()">← 返回</button>
+                            <button class="next-btn" onclick="app.goToStep(4)">下一步：选择标题 →</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 4: 标题选择 -->
+                    <div class="step-panel" data-step="4">
+                        <h2>选择短剧标题</h2>
+                        <p class="step-desc">AI基于你的创意和角色，生成了5个符合女频短剧调性的标题选项</p>
+
+                        <div id="title-selection-panel" style="margin: 30px 0;">
+                            <div style="text-align: center; padding: 40px;">
+                                <p style="color: var(--text-secondary); margin-bottom: 20px;">点击下方按钮生成标题选项</p>
+                                <button class="btn-primary" onclick="app.generateTitles()">✨ AI生成5个标题</button>
+                            </div>
+                        </div>
+
+                        <div class="step-actions">
+                            <button class="btn-secondary" onclick="app.prevStep()">← 返回修改角色</button>
+                            <button class="next-btn" onclick="app.goToStep(5)">下一步：生成分集大纲 →</button>
+                        </div>
+                    </div>
+
+                    <!-- Step 5: 分集大纲 -->
+                    <div class="step-panel" data-step="5">
+                        <h2>分集大纲</h2>
+                        <p class="step-desc">30-50集的完整剧情规划，每集包含钩子设计</p>
+
+                        <!-- 大纲配置区域（仅在未生成大纲时显示） -->
+                        <div id="outline-config-panel" style="background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 30px; margin: 20px 0;">
+                            <h3 style="margin-bottom: 20px; color: var(--cinema-gold);">📋 大纲配置</h3>
+                            <div class="form-row" style="display: flex; gap: 20px; margin-bottom: 20px;">
+                                <div class="form-group" style="flex: 1;">
+                                    <label>总集数</label>
+                                    <select id="outline-episode-count" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-primary);">
+                                        <option value="30">30集</option>
+                                        <option value="35">35集</option>
+                                        <option value="40" selected>40集</option>
+                                        <option value="45">45集</option>
+                                        <option value="50">50集</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex: 1;">
+                                    <label>每集时长</label>
+                                    <select id="outline-episode-duration" style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--input-bg); color: var(--text-primary);">
+                                        <option value="60">60秒</option>
+                                        <option value="90" selected>90秒</option>
+                                        <option value="120">120秒</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div style="text-align: center; margin-top: 30px;">
+                                <button class="btn-primary" onclick="app.generateOutline()" style="font-size: 1.1rem; padding: 12px 30px;">
+                                    ✨ AI生成分集大纲
+                                </button>
+                                <p style="color: var(--text-secondary); margin-top: 10px; font-size: 0.9rem;">
+                                    基于已选择的创意和角色，生成完整的大纲规划
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- 大纲显示区域（生成后显示） -->
+                        <div id="outline-display-panel" style="display: none;">
+                            <div class="outline-controls">
+                                <div class="outline-stats">
+                                    <span>总集数：<strong id="outline-total">0</strong></span>
+                                    <span>大反转节点：<strong id="outline-twists">0</strong></span>
+                                </div>
+                                <div class="outline-actions">
+                                    <button class="btn-secondary" onclick="app.regenerateOutline()">🔄 重新生成</button>
+                                    <button class="btn-secondary" onclick="app.adjustOutline()">⚙️ 调整大纲</button>
+                                </div>
+                            </div>
+
+                            <div class="outline-visualization">
+                                <div class="story-arc" id="story-arc">
+                                    <!-- 故事弧线可视化 -->
+                                </div>
+                            </div>
+
+                            <div class="outline-list-detailed" id="outline-detailed">
+                                <!-- 详细大纲列表 -->
+                            </div>
+
+                            <div class="step-actions">
+                                <button class="btn-secondary" onclick="app.prevStep()">← 返回修改</button>
+                                <button class="next-btn primary" onclick="app.generateFullScript()">生成完整剧本（全部集数）</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 6: 完整剧本 -->
+                    <div class="step-panel" data-step="6">
+                        <h2>完整剧本</h2>
+                        <p class="step-desc">全部集数的详细剧本，包含场景、对白、镜头指示</p>
+
+                        <div class="script-toolbar">
+                            <div class="script-filters">
+                                <label>查看：</label>
+                                <select id="script-filter" onchange="app.filterScript()">
+                                    <option value="all">全部剧集</option>
+                                    <option value="1-10">第1-10集</option>
+                                    <option value="11-20">第11-20集</option>
+                                    <option value="21-30">第21-30集</option>
+                                    <option value="31-40">第31-40集</option>
+                                    <option value="41-50">第41-50集</option>
+                                    <option value="hooks">仅看钩子集</option>
+                                    <option value="twists">仅看反转集</option>
+                                </select>
+                            </div>
+                            <div class="script-actions">
+                                <button class="btn-secondary" onclick="app.exportToWord()">📝 导出Word (.doc)</button>
+                                <button class="btn-secondary" onclick="app.exportToPDF()">📄 导出PDF (打印)</button>
+                                <button class="btn-secondary" onclick="app.exportOutline()">📋 导出大纲</button>
+                                <button class="btn-primary" onclick="app.saveProject()">💾 保存项目</button>
+                            </div>
+                        </div>
+
+                        <div class="script-content-full" id="script-full-content">
+                            <!-- 完整剧本内容 -->
+                        </div>
+
+                        <div class="step-actions">
+                            <button class="btn-secondary" onclick="app.prevStep()">← 返回大纲</button>
+                            <button class="btn-secondary" onclick="app.goToStep(1)">开始新项目</button>
+                        </div>
+                    </div>
+
+                </main>
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section id="projects" class="section">
+            <h2>我的项目</h2>
+            <div class="projects-grid" id="projects-list">
+                <div class="project-card new" onclick="app.goToStep(1)">
+                    <span class="plus">+</span>
+                    <p>创建新项目</p>
+                </div>
+                <!-- 已有项目将在这里显示 -->
+            </div>
+        </section>
+
+        <!-- Templates Section -->
+        <section id="templates" class="section">
+            <h2>类型库参考</h2>
+            <div class="templates-reference">
+                <!-- 类型详细说明 -->
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Short Drama Script Agent | Built for Professional Screenwriters</p>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+        <p id="loading-text">AI正在生成...</p>
+    </div>
+
+    <script src="js/types.js"></script>
+    <script src="js/engine.js"></script>
+    <script src="js/ai-service.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/debug-helper.js"></script>
+</body>
+</html>

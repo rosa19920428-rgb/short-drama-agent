@@ -1,0 +1,2216 @@
+/**
+ * Kimi AI Service - AI大纲生成服务
+ * 接入 Moonshot AI (Kimi) API
+ */
+
+class AIService {
+    constructor() {
+        // Kimi API配置 - 预置内置密钥
+        // ⚠️ 重要：将你的Kimi API Key粘贴到下方引号中
+        // 从 https://platform.moonshot.cn/ 获取你的API Key（以 sk- 开头）
+        this.API_KEY = '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';
+        this.API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+        this.MODEL = 'anthropic/claude-3.5-sonnet';
+        // 备用方案：如果Kimi失败，回退到模板
+        this.useAI = true; // 默认启用AI
+    }
+
+    /**
+     * 基于创意生成专业人物设定
+     */
+    async generateCharactersWithAI(creative, typeInfo, count = 5) {
+        const category = typeInfo.category;
+        const typeName = typeInfo.name;
+
+        const prompt = `基于以下创意，生成6个详细的欧美短剧人物设定。
+
+剧集信息：
+- 类型：${category === 'female' ? 'Female-Oriented' : 'Male-Oriented'} - ${typeName}
+- 核心创意：${creative?.concept || 'Not specified'}
+- 故事梗概：${creative?.synopsis || 'Not specified'}
+
+⚠️ 重要规则：
+1. 主角性别：${category === 'female' ? '必须是女性（Female）' : '必须是男性（Male）'}
+2. 恋爱对象性别：${category === 'female' ? '必须是男性（Male）' : '必须是女性（Female）'}
+3. 恋爱对象是主角的恋爱对象，不是主角本人
+4. 所有角色必须使用具体的欧美人名（如Sophia, Alexander, Emma, James等），禁止使用"女主角"、"男主角"、"女主"、"男主"等代称
+
+请生成以下6个角色（严格按照此顺序和性别要求）：
+
+1. 主角（Protagonist）- ${category === 'female' ? '女性主角' : '男性主角'}
+   - 使用具体${category === 'female' ? '女性' : '男性'}英文名如${category === 'female' ? 'Sophia/Emma/Olivia' : 'Alexander/Ethan/James'}等
+   - 剧情推动者，善良坚韧但有缺点
+
+2. 恋爱对象（Love Interest）- ${category === 'female' ? '男性恋爱对象' : '女性恋爱对象'}
+   - 使用具体${category === 'female' ? '男性' : '女性'}英文名如${category === 'female' ? 'Alexander/Ethan/Michael' : 'Emma/Charlotte/Amelia'}等
+   - Billionaire CEO类型，外冷内热，有保护欲
+
+3. 主要反派（Primary Antagonist）
+   - 情敌或商业反派，制造情感障碍
+   - 典型：男主未婚妻/商业联姻对象/想夺取公司的董事会成员
+
+4. 次要反派（Secondary Antagonist）
+   - 辅助反派，制造麻烦和危机
+   - 典型：女主的嫉妒同事/男主的敌对亲戚/知晓女主秘密的人
+
+5. 闺蜜/好友（Best Friend）
+   - 女主的情感支柱和智囊
+   - 典型：幽默闺蜜，提供建议，推动女主认清感情
+
+6. 喜剧角色/同事（Comic Relief）
+   - 缓解紧张气氛，提供轻松元素
+   - 典型：男主的忠诚助理/办公室搞笑同事/女主室友
+
+格式示例：
+角色：Sophia Anderson（Protagonist - 女性主角）
+身份：Tech公司新晋设计师
+年龄：24岁
+外貌：棕色长发，绿色眼睛，时尚但不张扬的穿着
+性格：聪明独立，对工作充满热情，但在感情中有些笨拙和自卑
+背景：来自中西部的普通家庭，凭奖学金读完设计学院，梦想在NYC时尚界立足
+动机：证明自己的设计才华，获得认可
+秘密：其实暗恋男主但不敢表白，隐藏了自己是著名设计师私生女的身份
+目标：在本剧中设计出获奖作品并赢得男主的心
+关系：与闺蜜Lily无话不谈，与男主从误会到相爱，被反派Victoria嫉妒
+
+角色：Alexander Knight（Love Interest - 男性恋爱对象）
+身份：Knight Tech的CEO，亿万富翁
+年龄：30岁
+外貌：深色短发，锐利蓝眼睛，总是穿着定制西装，气场强大
+性格：表面冷酷控制狂，工作狂，对不熟悉的人保持距离；对女主展现温柔和保护欲
+背景：白手起家创建科技公司，父母离异导致他不轻易信任他人
+动机：保护公司不被董事会夺走，找到真正爱他本人而非钱财的人
+秘密：其实早就注意到女主的才华，在暗中帮助她的设计事业
+目标：击退董事会政变，和女主建立真挚的感情
+关系：被Victoria纠缠但无情意，逐渐被女主的真诚打动，信任助理James
+
+角色：Victoria Sterling（Primary Antagonist - 主要反派）
+身份：男主的未婚妻，投资人的女儿
+年龄：28岁
+外貌：金发碧眼，总是穿着奢侈品，傲慢的表情
+性格：傲慢自私，心机深沉，认为金钱和地位可以买到一切
+背景：上流社会千金，从小被教育要嫁给成功人士，视男主为囊中之物
+动机：嫁给男主获得社会地位和财富
+秘密：其实有赌博债务，急需嫁给有钱人来填补
+目标：除掉女主，让男主娶自己
+关系：女主的情敌，Marcus的盟友
+
+...以此类推生成剩余3个角色
+
+⚠️ 检查清单：
+- [ ] 主角是${category === 'female' ? '女性' : '男性'}且使用${category === 'female' ? '女性' : '男性'}英文名
+- [ ] 恋爱对象是${category === 'female' ? '男性' : '女性'}且使用${category === 'female' ? '男性' : '女性'}英文名
+- [ ] 没有名为"女主角"、"男主角"、"女主"、"男主"的人物
+- [ ] 所有6个角色都有具体的人名和详细设定
+- [ ] 反派角色有明确的对抗动机
+- [ ] 支持角色（闺蜜和喜剧角色）有独特的个性和作用
+
+请生成专业详细的人物设定：`;
+
+        try {
+            const response = await fetch(this.API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.API_KEY}`,
+                    'HTTP-Referer': window.location.href,
+                    'X-Title': 'Short Drama Script Agent'
+                },
+                body: JSON.stringify({
+                    model: this.MODEL,
+                    messages: [
+                        {
+                            role: 'system',
+                            content: '你是专业的人物设定师，擅长创作欧美影视人物。你创造的人物立体丰满，有明确的心理动机和人物弧线。'
+                        },
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
+                    temperature: 0.8,
+                    max_tokens: 4000
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to generate characters');
+            }
+
+            const data = await response.json();
+            const aiContent = data.choices[0].message.content;
+            console.log('[AI人物生成] 原始响应长度:', aiContent.length);
+            console.log('[AI人物生成] 响应前300字符:', aiContent.substring(0, 300));
+            return this.parseCharacterResponse(aiContent, category);
+
+        } catch (error) {
+            console.error('AI人物生成失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 解析AI生成的人物设定
+     */
+    parseCharacterResponse(aiText, category) {
+        const characters = [];
+
+        // 预处理：标准化换行符，移除BOM和特殊空格
+        const normalizedText = aiText
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n')
+            .replace(/^\uFEFF/, '')
+            .replace(/[\u00A0\u3000]/g, ' ');
+
+        console.log('[角色解析] 原始文本长度:', aiText.length);
+        console.log('[角色解析] 标准化后长度:', normalizedText.length);
+        console.log('[角色解析] 前200字符:', normalizedText.substring(0, 200));
+
+        // 改进分割逻辑，支持多种格式
+        let sections = normalizedText.split(/角色：|Character:/i).filter(s => s.trim());
+
+        // 如果分割后只有1个或没有，尝试用数字+点号的格式（如"1. "或"1."）
+        if (sections.length <= 1) {
+            // 尝试匹配 "1. 角色名" 或 "1.角色名" 格式
+            sections = aiText.split(/\n\d+[\.\．]\s*/).filter(s => s.trim());
+        }
+
+        // 如果还是只有1个，尝试用换行+数字+空格
+        if (sections.length <= 1) {
+            sections = aiText.split(/\n(?=\d+\s+[\u4e00-\u9fa5])/).filter(s => s.trim());
+        }
+
+        console.log('解析到的角色段落数:', sections.length);
+        console.log('角色内容预览:', sections.map((s, i) => `${i}: ${s.substring(0, 50)}...`));
+
+        const roles = ['protagonist', 'love-interest', 'antagonist', 'antagonist2', 'supporting', 'supporting2'];
+
+        // ⚠️ 关键修复：确保sections长度足够，且第一个section不为空
+        if (sections.length === 0) {
+            console.warn('角色解析失败：没有分割到任何角色段落，使用默认角色');
+            return this.getDefaultCharacters(category);
+        }
+
+        // 如果第一个section看起来像完整的AI响应（包含所有角色），尝试进一步分割
+        if (sections.length < 6 && sections.length > 0) {
+            const firstSection = sections[0];
+            // 尝试用"角色："重新分割（可能整个响应都在第一个section里）
+            const reSplit = firstSection.split(/角色：/);
+            if (reSplit.length > 2) {
+                console.log('检测到所有角色都在第一个段落中，重新分割');
+                sections = reSplit.filter(s => s.trim());
+            }
+        }
+
+        // 常见的女性名字和男性名字（用于验证和替换）
+        const femaleNames = ['Sophia', 'Emma', 'Olivia', 'Ava', 'Isabella', 'Mia', 'Charlotte', 'Amelia', 'Evelyn', 'Abigail', 'Grace', 'Emily'];
+        const maleNames = ['Alexander', 'Ethan', 'Michael', 'James', 'William', 'Benjamin', 'Lucas', 'Henry', 'Daniel', 'Matthew', 'Jackson', 'Sebastian'];
+
+        // 占位符名称检测
+        const placeholderNames = ['女主角', '男主角', '女主', '男主', '女主人公', '男主人公', '主角', '恋爱对象'];
+
+        // 关键修复：过滤掉非角色段落（如AI的说明文字）
+        const validSections = sections.filter(section => {
+            const firstLine = section.split('\n')[0]?.trim();
+            // 保留以名字开头或包含角色标识符的段落
+            return firstLine && (
+                firstLine.match(/^[A-Z][a-z]+/) || // 英文名字
+                firstLine.match(/^[一-龥]{2,4}/) || // 中文名字
+                section.match(/身份|Role|Status|年龄|Age/i) // 包含角色字段
+            );
+        });
+
+        console.log(`[角色解析] 有效角色段落: ${validSections.length}/${sections.length}`);
+
+        // 如果过滤后没有有效段落，直接返回默认角色
+        if (validSections.length === 0) {
+            console.error('[角色解析] 没有有效的角色段落，使用默认角色');
+            return this.getDefaultCharacters(category);
+        }
+
+        validSections.forEach((section, index) => {
+            if (index >= roles.length) return;
+
+            const lines = section.split('\n').filter(l => l.trim());
+            console.log(`[角色解析] 第${index+1}个角色: 段落行数=${lines.length}`);
+
+            // 提取名字：尝试第一行，如果没有则使用默认
+            let name = '';
+            if (lines.length > 0) {
+                const nameLine = lines[0];
+                console.log(`[角色解析] 第${index+1}个角色原始名称行: "${nameLine}"`);
+
+                // 移除常见的前缀如"1. "、"主角："等
+                const cleanLine = nameLine.replace(/^\d+[\.\．\、]\s*/, '').replace(/^(主角|角色|恋爱对象)[：:]\s*/, '');
+                name = cleanLine.split(/[（(]/)[0].trim();
+                console.log(`[角色解析] 第${index+1}个角色提取名称: "${name}"`);
+            }
+
+            // 验证名字有效性
+            if (!name || name.length < 2 || placeholderNames.some(p => name.includes(p))) {
+                console.warn(`[角色解析] 第${index+1}个角色名字无效("${name}"), 使用默认名字`);
+                name = index === 0 ?
+                    (category === 'female' ? femaleNames[0] : maleNames[0]) :
+                    index === 1 ?
+                        (category === 'female' ? maleNames[1] : femaleNames[1]) :
+                        femaleNames[index] || maleNames[index];
+            }
+
+            // 提取各种属性
+            const desc = this.extractField(section, ['身份', 'Role', 'Status']) || '';
+            const age = this.extractField(section, ['年龄', 'Age']) || '25';
+            const appearance = this.extractField(section, ['外貌', 'Appearance', 'Looks']) || '';
+            const personality = this.extractField(section, ['性格', 'Personality']) || '';
+            const background = this.extractField(section, ['背景', 'Background', 'History']) || '';
+            const motivation = this.extractField(section, ['动机', 'Motivation']) || '';
+            const secret = this.extractField(section, ['秘密', 'Secret']) || '';
+
+            const fullDesc = `${appearance} ${personality} ${background}`.substring(0, 100);
+
+            characters.push({
+                role: roles[index],
+                name: name,
+                desc: fullDesc || desc,
+                detailedInfo: {
+                    age: age,
+                    appearance: appearance,
+                    personality: personality,
+                    background: background,
+                    motivation: motivation,
+                    secret: secret
+                }
+            });
+        });
+
+        // 关键修复：验证第一个角色必须是protagonist且有效
+        if (characters.length === 0 || !characters[0] || characters[0].role !== 'protagonist' || !characters[0].name || characters[0].name.length < 2) {
+            console.error('[角色解析] 主角无效或缺失，使用全部默认角色');
+            return this.getDefaultCharacters(category);
+        }
+
+        // 验证性别逻辑（仅针对女性类别）
+        if (category === 'female' && characters.length >= 2) {
+            // 主角应该是女性（名字在femaleNames中或不是maleNames中）
+            const protagonistName = characters[0].name;
+            const loveInterestName = characters[1].name;
+
+            console.log('验证人物性别:', {
+                protagonist: protagonistName,
+                loveInterest: loveInterestName,
+                isProtagonistFemale: femaleNames.some(n => protagonistName.includes(n)),
+                isLoveInterestMale: maleNames.some(n => loveInterestName.includes(n))
+            });
+
+            // 如果主角名字看起来像男性名字（在maleNames列表中但不在femaleNames中）
+            if (maleNames.some(n => protagonistName.includes(n)) && !femaleNames.some(n => protagonistName.includes(n))) {
+                console.warn(`主角"${protagonistName}"可能是男性名字，女性类别中主角应为女性，将交换主角和恋爱对象`);
+                // 交换前两个角色
+                const temp = characters[0];
+                characters[0] = characters[1];
+                characters[1] = temp;
+                // 更新角色类型
+                characters[0].role = 'protagonist';
+                characters[1].role = 'love-interest';
+            }
+        }
+
+        // 如果角色数量不足6个，使用默认模板补全
+        const defaultCharacters = [
+            {
+                role: 'protagonist',
+                name: category === 'female' ? 'Sophia Anderson' : 'Ethan Williams',
+                desc: '善良坚韧的主角，面对困难从不放弃',
+                detailedInfo: {
+                    age: '25',
+                    appearance: category === 'female' ? '棕色长发，明亮的眼睛，甜美笑容' : '深色短发，锐利眼神，阳光笑容',
+                    personality: '聪明独立，善良但有主见',
+                    background: '普通家庭出身，靠自己的努力打拼',
+                    motivation: '证明自己，实现梦想',
+                    secret: '隐藏着不为人知的身份或过去'
+                }
+            },
+            {
+                role: 'love-interest',
+                name: category === 'female' ? 'Alexander Knight' : 'Emma Thompson',
+                desc: category === 'female' ? 'Billionaire CEO，外冷内热' : '优雅独立的女性，有自己的事业',
+                detailedInfo: {
+                    age: '30',
+                    appearance: category === 'female' ? '深色短发，锐利蓝眼睛，总是穿着定制西装' : '金色长发，优雅气质，时尚穿着',
+                    personality: category === 'female' ? '表面冷酷，内心温柔，有保护欲' : '独立自信，聪明机智',
+                    background: category === 'female' ? '白手起家创建商业帝国' : '事业有成的职业女性',
+                    motivation: category === 'female' ? '找到真爱，同时保护公司' : '追求真爱，平衡事业与感情',
+                    secret: category === 'female' ? '早就注意到主角的特别' : '对主角一见钟情但不敢表白'
+                }
+            },
+            {
+                role: 'antagonist',
+                name: category === 'female' ? 'Victoria Sterling' : 'Marcus Johnson',
+                desc: '主要反派，制造情感障碍和危机',
+                detailedInfo: {
+                    age: '28',
+                    appearance: '精致外表，但眼神中透着算计',
+                    personality: '傲慢自私，心机深沉',
+                    background: '上流社会出身，习惯得到想要的一切',
+                    motivation: '夺取主角拥有的一切',
+                    secret: '不可告人的丑闻或弱点'
+                }
+            },
+            {
+                role: 'antagonist2',
+                name: category === 'female' ? 'Marcus Reed' : 'Catherine White',
+                desc: '次要反派，制造麻烦和阻碍',
+                detailedInfo: {
+                    age: '35',
+                    appearance: '看起来友善，实则阴险',
+                    personality: '虚伪，善于伪装',
+                    background: '主角的同事或男主的亲戚',
+                    motivation: '嫉妒主角，想看到主角失败',
+                    secret: '暗中与主要反派合作'
+                }
+            },
+            {
+                role: 'supporting',
+                name: category === 'female' ? 'Lily Chen' : 'James Wilson',
+                desc: '闺蜜/好友，情感支持和智囊',
+                detailedInfo: {
+                    age: '26',
+                    appearance: '时尚活泼，笑容灿烂',
+                    personality: '幽默风趣，直言不讳，最懂主角',
+                    background: '主角最好的朋友，无话不谈',
+                    motivation: '希望主角幸福',
+                    secret: '总是能看穿主角的心事'
+                }
+            },
+            {
+                role: 'supporting2',
+                name: category === 'female' ? 'James Miller' : 'Olivia Davis',
+                desc: '喜剧角色，缓解紧张气氛',
+                detailedInfo: {
+                    age: '29',
+                    appearance: '亲和力强，总是带着笑容',
+                    personality: '搞笑担当，但关键时刻很靠谱',
+                    background: category === 'female' ? '男主的忠诚助理' : '女主的同事',
+                    motivation: '帮助主角们走到一起',
+                    secret: '其实是感情专家，善于观察'
+                }
+            }
+        ];
+
+        // 关键修复：验证每个已解析的角色，如果为空或无效，替换为默认角色
+        for (let i = 0; i < characters.length; i++) {
+            const char = characters[i];
+            if (!char || !char.name || char.name.trim() === '' || char.name.length < 2) {
+                const defaultChar = defaultCharacters.find(c => c.role === roles[i]);
+                if (defaultChar) {
+                    console.warn(`[角色解析] 角色${i + 1}(${roles[i]})无效（名字为空或太短），使用默认角色: ${defaultChar.name}`);
+                    characters[i] = {...defaultChar};
+                }
+            }
+        }
+
+        // 关键修复：如果主角(protagonist)仍然无效，直接重置整个角色列表
+        if (!characters[0] || !characters[0].name || characters[0].name.trim() === '' ||
+            characters[0].role !== 'protagonist') {
+            console.error('[角色解析] 主角无效或角色错位，重置所有角色为默认');
+            return this.getDefaultCharacters(category);
+        }
+
+        // 补齐缺失的角色
+        while (characters.length < 6) {
+            const missingRole = roles[characters.length];
+            const defaultChar = defaultCharacters.find(c => c.role === missingRole);
+            if (defaultChar) {
+                console.warn(`[角色解析] 角色${characters.length + 1}(${missingRole})缺失，使用默认角色: ${defaultChar.name}`);
+                characters.push({...defaultChar});
+            }
+        }
+
+        // 最终检查：如果解析失败，使用默认角色
+        if (characters.length === 0 || !characters[0] || characters[0].role !== 'protagonist') {
+            console.error('[角色解析] 解析失败或主角缺失，使用默认角色');
+            return this.getDefaultCharacters(category);
+        }
+
+        console.log('最终角色列表:', characters.map(c => `${c.role}: ${c.name}`));
+
+        return characters;
+    }
+
+    extractField(text, fieldNames) {
+        for (const fieldName of fieldNames) {
+            const regex = new RegExp(`${fieldName}[：:](.+?)(?=\n|$)`, 'i');
+            const match = text.match(regex);
+            if (match) return match[1].trim();
+        }
+        return '';
+    }
+
+    // 获取默认角色列表（当解析失败时使用）
+    getDefaultCharacters(category) {
+        const femaleNames = ['Sophia Anderson', 'Emma Thompson', 'Olivia Davis'];
+        const maleNames = ['Alexander Knight', 'Ethan Williams', 'James Miller'];
+
+        return [
+            {
+                role: 'protagonist',
+                name: category === 'female' ? femaleNames[0] : maleNames[0],
+                desc: '善良坚韧的主角，面对困难从不放弃',
+                detailedInfo: {
+                    age: '25',
+                    appearance: category === 'female' ? '棕色长发，明亮的眼睛，甜美笑容' : '深色短发，锐利眼神，阳光笑容',
+                    personality: '聪明独立，善良但有主见',
+                    background: '普通家庭出身，靠自己的努力打拼',
+                    motivation: '证明自己，实现梦想',
+                    secret: '隐藏着不为人知的身份或过去'
+                }
+            },
+            {
+                role: 'love-interest',
+                name: category === 'female' ? maleNames[0] : femaleNames[0],
+                desc: category === 'female' ? 'Billionaire CEO，外冷内热' : '优雅独立的女性，有自己的事业',
+                detailedInfo: {
+                    age: '30',
+                    appearance: category === 'female' ? '深色短发，锐利蓝眼睛，总是穿着定制西装' : '金色长发，优雅气质，时尚穿着',
+                    personality: category === 'female' ? '表面冷酷，内心温柔，有保护欲' : '独立自信，聪明机智',
+                    background: category === 'female' ? '白手起家创建商业帝国' : '事业有成的职业女性',
+                    motivation: category === 'female' ? '找到真爱，同时保护公司' : '追求真爱，平衡事业与感情',
+                    secret: category === 'female' ? '早就注意到主角的特别' : '对主角一见钟情但不敢表白'
+                }
+            },
+            {
+                role: 'antagonist',
+                name: category === 'female' ? 'Victoria Sterling' : 'Marcus Johnson',
+                desc: '主要反派，制造情感障碍和危机',
+                detailedInfo: {
+                    age: '28',
+                    appearance: '精致外表，但眼神中透着算计',
+                    personality: '傲慢自私，心机深沉',
+                    background: '上流社会出身，习惯得到想要的一切',
+                    motivation: '夺取主角拥有的一切',
+                    secret: '不可告人的丑闻或弱点'
+                }
+            },
+            {
+                role: 'antagonist2',
+                name: category === 'female' ? 'Marcus Reed' : 'Catherine White',
+                desc: '次要反派，制造麻烦和阻碍',
+                detailedInfo: {
+                    age: '35',
+                    appearance: '看起来友善，实则阴险',
+                    personality: '虚伪，善于伪装',
+                    background: '主角的同事或男主的亲戚',
+                    motivation: '嫉妒主角，想看到主角失败',
+                    secret: '暗中与主要反派合作'
+                }
+            },
+            {
+                role: 'supporting',
+                name: category === 'female' ? 'Lily Chen' : 'James Wilson',
+                desc: '闺蜜/好友，情感支持和智囊',
+                detailedInfo: {
+                    age: '26',
+                    appearance: '时尚活泼，笑容灿烂',
+                    personality: '幽默风趣，直言不讳，最懂主角',
+                    background: '和主角从小一起长大，或是职场中的知己',
+                    motivation: '帮助主角找到真爱，实现幸福',
+                    secret: '其实暗恋着喜剧角色但不敢表白'
+                }
+            },
+            {
+                role: 'supporting2',
+                name: category === 'female' ? 'James Miller' : 'Olivia Davis',
+                desc: '喜剧角色，缓解紧张气氛',
+                detailedInfo: {
+                    age: '29',
+                    appearance: '亲和力强，总是带着笑容',
+                    personality: '搞笑担当，但关键时刻很靠谱',
+                    background: category === 'female' ? '男主的忠诚助理' : '女主的同事',
+                    motivation: '帮助主角们走到一起',
+                    secret: '其实是感情专家，善于观察'
+                }
+            }
+        ];
+    }
+
+    // 获取默认创意列表（当AI生成不足5个时使用）
+    getDefaultCreativeIdeas() {
+        return [
+            {
+                title: 'The CEO\'s Accidental Bride',
+                concept: '平凡设计师助理误将咖啡洒在冷酷地产大亨身上，被迫签订契约婚姻协议',
+                synopsis: '25岁的Sophia是一名struggling的平面设计师助理，每天在曼哈顿的设计公司打杂。某天她为上司送重要文件时，在电梯里不慎将热咖啡洒在了神秘billionaire Alexander的十万美金定制西装上。Alexander是纽约最大地产帝国的继承人，以冷酷无情和完美主义著称。面对慌乱道歉的Sophia，Alexander提出了一个疯狂的提议：Sophia必须假扮他的未婚妻参加下个月的慈善晚宴，以安抚患有心脏病的祖母。Sophia被迫接受条件，搬进了Alexander的顶层豪宅，开始了契约同居生活。然而，生活在同一屋檐下，Sophia逐渐发现Alexander冷酷外表下隐藏着童年创伤，而Alexander也被Sophia的乐观坚韧打动...',
+                externalHook: '契约婚姻何时被揭穿',
+                internalHook: '契约双方何时真正爱上对方而非演戏',
+                highlights: ['AI生成'],
+                isCustom: false,
+                type: 'AI生成'
+            },
+            {
+                title: 'Billionaire\'s Secret Contract',
+                concept: '失业前台小姐为支付母亲医药费，与科技 billionaire 签订三个月假女友合约',
+                synopsis: 'Emma原本是科技巨头公司的一名普通前台，因公司裁员而失去工作。屋漏偏逢连夜雨，她的母亲突然被诊断出罕见疾病，需要巨额医药费。走投无路的Emma在酒吧买醉时，偶遇了公司新任CEO Ethan。Ethan是全球最年轻的科技billionaire之一，正需要一个"乖巧听话"的女友来应付董事会的质疑——因为他们认为他不稳定的生活方式会影响公司股价。两人一拍即合，签订了一份三个月的假女友合约。Emma搬进Ethan的豪宅，接受礼仪培训，出席各种高端场合。但在扮演完美女友的过程中，Emma发现Ethan冷酷外表下的孤独...',
+                externalHook: '合约三个月到期后能否续约',
+                internalHook: 'Ethan何时放下防备真心接纳Emma',
+                highlights: ['AI生成'],
+                isCustom: false,
+                type: 'AI生成'
+            },
+            {
+                title: 'Trapped with the Tycoon',
+                concept: '暴风雪夜酒店前台被迫与酒店集团继承人在山庄共度一夜，引发媒体追逐',
+                synopsis: 'Olivia是一家豪华滑雪度假酒店的前台服务员。在一个暴风雪夜，她因工作失误被迫留在酒店过夜，而她的"室友"恰好是酒店集团继承人William——一个刚从家族斗争中脱身、来雪山避世的冷酷男人。两人因一场误会相识，又在暴风雪导致的停电中被迫共度一夜。William原本只是打算微服私访检查酒店运营，却没想到会遇到Olivia这样单纯善良的女孩。当媒体拍到两人一起走出酒店的照片，整个上流社会哗然。William的家族施压要求他澄清，但他却做出了一个惊人的决定——宣布Olivia是他的未婚妻...',
+                externalHook: '媒体何时发现两人关系的真相',
+                internalHook: 'William何时承认自己对Olivia一见钟情',
+                highlights: ['AI生成'],
+                isCustom: false,
+                type: 'AI生成'
+            },
+            {
+                title: 'The Boss\'s Unexpected Baby',
+                concept: '实习生与霸道总裁一夜情后意外怀孕，两人为宝宝开始契约同居',
+                synopsis: 'Ava是一名刚毕业的法学院实习生，在实习公司的年会上喝多了，与神秘男人度过了一夜。三个月后，她发现自己怀孕，而孩子的父亲竟然是公司的CEO——冷酷无情的Michael。Michael是纽约法律界令人闻风丧胆的"狼王"，从未对任何女人心软。当他得知Ava怀孕的消息，第一反应是支付抚养费让她消失。但Ava拒绝了他的钱，坚持要独自抚养孩子。Michael被她的倔强打动，提出了一个妥协方案：Ava搬进他的别墅，两人共同准备迎接宝宝的到来。在产检、胎教课、婴儿房布置的过程中，Michael逐渐从一个工作狂变成了准爸爸...',
+                externalHook: 'Ava的怀孕何时被公司同事发现',
+                internalHook: 'Michael何时从责任感转变为真正的父爱',
+                highlights: ['AI生成'],
+                isCustom: false,
+                type: 'AI生成'
+            },
+            {
+                title: 'My Fake Fiancé is a Billionaire',
+                concept: '咖啡师为应付催婚母亲雇佣演员假扮男友，没想到对方是隐藏身份的亿万富翁',
+                synopsis: 'Mia是一家纽约小有名气的独立咖啡馆的咖啡师，每天为各种奇怪客人的点单要求头疼。她的母亲一直在疯狂催婚，甚至威胁要给她安排相亲。为了应付母亲即将到来的visit，Mia在朋友建议下雇佣了一个"职业男友"——James。James自称是一名 struggling 的演员，正好也需要一个假女友来应付家族的压力。两人签订了一份详尽的契约，规定了相处的各种细节。然而Mia不知道的是，James其实是美国最大零售帝国的继承人，他因为厌倦了女人只爱他的钱而选择隐姓埋名。在扮演Mia男友的过程中，James第一次体验到了普通人生活的快乐...',
+                externalHook: 'James的亿万富翁身份何时曝光',
+                internalHook: 'Mia何时相信James爱的是她本人而非演戏',
+                highlights: ['AI生成'],
+                isCustom: false,
+                type: 'AI生成'
+            }
+        ];
+    }
+
+    // 简单的密钥解码（基本的混淆，防君子不防小人）
+    decodeKey(encoded) {
+        // 这里可以添加简单的解码逻辑，或者直接返回明文
+        // 例如：return atob(encoded);
+        return encoded;
+    }
+
+    // 设置API Key（保留此方法供后续扩展）
+    setApiKey(key) {
+        this.API_KEY = key;
+        this.useAI = true;
+    }
+
+    // 检查是否可用
+    isAvailable() {
+        return this.useAI && this.API_KEY.length > 10; // 确保不是占位符
+    }
+
+    /**
+     * 生成创意概念 - 使用AI生成不同的创意
+     * @param {string} typeId - 类型ID
+     * @param {Object} typeInfo - 类型信息
+     * @param {number} count - 生成数量（默认5个）
+     * @returns {Promise<Array>} - 创意列表
+     */
+    async generateCreativeIdeas(typeId, typeInfo, count = 5) {
+        if (!this.isAvailable()) {
+            console.warn('AI服务不可用，回退到模板生成');
+            return null; // 返回null让UI层处理回退
+        }
+
+        const category = typeInfo.category;
+        const typeName = typeInfo.name;
+
+        // 针对不同类型构建不同的职业/背景提示
+        let professionPrompt = '';
+        if (typeId === 'billionaire-ceo') {
+            professionPrompt = `
+针对霸道总裁(Billionaire CEO)类别，必须基于以下5个不同职业背景生成创意，严格遵循玛丽苏"男强女弱"套路：
+
+【男强女弱职业搭配 - 5组设定】
+1. 男主角：Tech CEO / 科技 billionaire（掌控亿万资产的科技新贵）
+   女主角：他的个人助理 / 公司前台 / 咖啡师（普通职场小透明，甜美可爱型）
+
+2. 男主角：Investment Banker / 华尔街金融巨鳄（冷酷无情的并购之王）
+   女主角：实习生 / 数据录入员 / 公司食堂服务员（职场新人，天真单纯）
+
+3. 男主角：Real Estate Tycoon / 房地产大亨（掌控城市天际线的地产帝王）
+   女主角：室内设计师助理 / 房产中介新手 / 清洁女工（为生活打拼的平凡女孩）
+
+4. 男主角：Fashion Brand Founder / 时尚品牌创始人（高冷毒舌的时尚教父）
+   女主角：他的私人造型师助理 / 试衣模特 / 服装店员（对时尚一窍不通的菜鸟）
+
+5. 男主角：Hotel Group Heir / 酒店集团继承人（玩世不恭的豪门贵公子）
+   女主角：酒店前台 / 客房服务员 / 实习厨师（勤工俭学的善良女孩）
+
+【玛丽苏套路要求】
+- 男主角必须：强势、霸道、掌控一切、外冷内热、有保护欲
+- 女主角必须：柔弱、善良、有点笨拙、需要被保护、不强势不精英
+- 职业对比：男主掌控全局，女主在基层/辅助岗位
+- 相遇契机：因工作关系被迫接触，产生"大灰狼vs小白兔"的张力
+- 禁止设定：女主不能是CEO、总裁、高管、精英人士；必须是相对弱势的职位`;
+        } else if (typeId === 'mafia') {
+            professionPrompt = `
+针对黑手党类别，基于以下不同背景：
+1. Italian Mafia / 意大利黑手党家族
+2. Russian Bratva / 俄罗斯黑帮
+3. Drug Cartel / 毒品卡特尔
+4. Crime Syndicate / 犯罪集团
+5. Underworld Boss / 地下世界霸主`;
+        } else if (typeId === 'werewolf') {
+            professionPrompt = `
+针对狼人类别，基于以下不同背景：
+1. Alpha Wolf / Alpha狼人 pack领袖
+2. Wolf Shifter CEO / 狼人变身企业家
+3. Fated Mates / 命中注定伴侣
+4. Rejected Mate / 被拒伴侣逆袭
+5. Hybrid Wolf / 混血狼人`;
+        }
+
+        // 添加随机性确保每次请求都不同（防止缓存）
+        const randomSeed = Math.floor(Math.random() * 10000);
+        const timestamp = new Date().toISOString();
+
+        const prompt = `作为专业的欧美短剧创意策划，请为${typeName}类别生成${count}个不同的创意概念。
+
+【随机种子: ${randomSeed}】
+【时间戳: ${timestamp}】
+
+${professionPrompt}
+
+重要：这是第${randomSeed}次生成请求，请确保与之前的创意完全不同，使用完全不同的角色名字、场景设定和情节转折。
+
+【玛丽苏套路要求 - 必须严格遵守】
+- 男主角设定：强势霸道、掌控全局、外冷内热、极度保护欲、事业巅峰的成功人士
+- 女主角设定：柔弱善良、有点笨拙、需要被保护、在基层岗位打拼、不强势不精明
+- 关系动态：大灰狼vs小白兔，强强对比（男强女弱），男主主导一切
+- 女主角职业禁忌：不能是高管、CEO、精英、律师、医生等强势职业；必须是助理、前台、实习生、服务员等支持性岗位
+- 性格反差：男主冷酷高效，女主天真迷糊；男主毒舌霸道，女主软糯可爱
+
+【字数严格要求 - 必须遵守】
+- 核心概念：必须是一句话（50字以内），简要概括核心卖点
+- 故事梗概：必须是400-500字详细描述，不能少于400字，不能简单概括，要有完整情节
+
+【概念 vs 梗概的区别 - 重要！】
+❌ 错误示例（梗概太短）：
+概念：平凡设计师助理误将咖啡洒在冷酷地产大亨身上，被迫签订契约婚姻协议
+梗概：女主是设计师助理，男主是地产大亨，两人签订契约婚姻，最后相爱。（只有1句话，严重不合格！）
+
+✅ 正确示例（梗概400-500字）：
+概念：平凡设计师助理误将咖啡洒在冷酷地产大亨身上，被迫签订契约婚姻协议
+梗概：25岁的Emma是一名 struggling 的平面设计师助理，每天在曼哈顿的设计公司打杂，梦想着有朝一日能成为正式设计师。某天她为上司送重要文件时，在电梯里不慎将热咖啡洒在了神秘 billionaire Alexander 的十万美金定制西装上。Alexander 是纽约最大地产帝国的继承人，以冷酷无情和完美主义著称，从未对任何人心软过。
+
+意外的是，面对慌乱道歉的Emma，Alexander 提出了一个疯狂的提议：Emma必须假扮他的未婚妻参加下个月的慈善晚宴，以安抚患有心脏病的祖母，否则就索赔天价干洗费和名誉损失费。原来Alexander的祖母一直在催婚，而他需要一个"乖巧听话"的假女友来应付。
+
+Emma被迫接受条件，搬进了Alexander位于中央公园旁的顶层豪宅，开始了契约同居生活。两人约定白天在人前扮演恩爱情侣，晚上各自回房互不干涉。然而，生活在同一屋檐下，Emma逐渐发现Alexander冷酷外表下隐藏着童年创伤——他的母亲因家族利益被牺牲，这让他不再相信真爱。与此同时，Alexander也被Emma的乐观坚韧打动，发现她虽然职位卑微，却拥有惊人的设计天赋...
+
+（梗概继续到400-500字，包含：开头相遇→发展冲突→高潮转折→结局走向）
+
+要求：
+1. 每个创意必须独特，不能重复，严格遵循上述玛丽苏人设
+2. 包含以下完整要素：
+   - 创意标题（英文）
+   - 核心概念（一句话概括，50字以内）
+   - 故事梗概（400-500字详细描述，必须有完整情节，不能只有1-2句话！）
+   - 外在期待（核心悬念）：比如"契约婚姻何时穿帮"、"女主何时发现男主身份"等
+   - 内在期待（情感钩子）：比如"男主何时承认爱上女主"、"女主何时不再害怕男主"等
+3. 符合竖屏短剧套路：强钩子、身份反差、契约关系/先婚后爱、意外同居等元素
+4. 主角必须是欧美人名，场景必须是欧美地点（NYC、LA、London等）
+5. 每个创意体现不同的职业特色（男主强势职业vs女主弱势职业）
+6. 强调浪漫喜剧(Rom-Com)元素：意外亲密、误会、契约关系、反差萌、保护欲爆棚
+7. 梗概必须详细充实（400-500字），要有具体场景、对话、情节转折
+
+输出格式：
+创意1：
+标题：[英文标题]
+概念：[核心概念一句话，50字以内]
+梗概：[详细故事梗概，400-500字，必须很长！包含起承转合的具体情节]
+外在期待：[外在事件钩子，比如"何时揭露身份"、"契约何时到期"等]
+内在期待：[内在情感钩子，比如"何时打破心墙"、"何时真正相爱"等]
+
+创意2：
+...以此类推
+
+【重要规则 - 违反会导致生成失败】
+1. 必须生成5个创意，不能多也不能少，每个都要完整输出
+2. 每个创意的梗概必须是400-500字，绝对不能只有1-2句话！
+3. 概念和梗概必须完全不同：概念是1句话，梗概是400-500字详细故事
+4. 如果梗概少于400字，必须补充更多细节：具体场景、角色心理、对话片段、情节转折
+5. 严格按照输出格式，确保5个创意都有：标题、概念、梗概、外在期待、内在期待
+6. 不要省略任何字段，不要合并内容，不要把概念和梗概写成一样的内容`;
+
+        try {
+            console.log(`%c[AI服务] 调用API生成${count}个创意...`, 'background: #4CAF50; color: white; padding: 2px 6px; border-radius: 4px;');
+            console.log(`[AI服务] 随机种子: ${randomSeed} (确保唯一性)`);
+            console.log(`[AI服务] 类型: ${typeId}, 类别: ${category}`);
+            console.log(`[AI服务] 请求URL: ${this.API_URL}`);
+            console.log(`[AI服务] 使用模型: ${this.MODEL}`);
+
+            const response = await fetch(this.API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.API_KEY}`,
+                    'HTTP-Referer': window.location.href,
+                    'X-Title': 'Short Drama Script Agent'
+                },
+                body: JSON.stringify({
+                    model: this.MODEL,
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are a professional short drama creative consultant specializing in vertical short dramas (竖屏短剧). You create compelling, unique concepts for romance dramas with Western settings and characters.'
+                        },
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
+                    temperature: 0.95, // 更高的温度以增加创意多样性
+                    top_p: 0.95,
+                    presence_penalty: 0.1, // 轻微惩罚重复内容
+                    max_tokens: 4000
+                })
+            });
+
+            console.log(`[AI服务] API响应状态: ${response.status} ${response.statusText}`);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`[AI服务] API请求失败:`, errorText);
+                throw new Error(`API请求失败: ${response.status} - ${errorText}`);
+            }
+
+            const data = await response.json();
+            console.log(`[AI服务] 收到API响应数据:`, data);
+
+            const content = data.choices[0].message.content;
+            console.log(`[AI服务] AI原始响应内容:\n${content}`);
+
+            // 解析AI返回的创意
+            const ideas = this.parseCreativeIdeas(content);
+            console.log(`[AI服务] 解析后的创意数量: ${ideas.length}`);
+
+            // 检查数量是否匹配
+            if (ideas.length < count) {
+                console.warn(`[AI服务] ⚠️ 警告: 期望生成${count}个创意，但实际只解析到${ideas.length}个`);
+                console.warn('[AI服务] AI原始响应:', content);
+            } else if (ideas.length > count) {
+                console.warn(`[AI服务] ⚠️ 警告: 解析到${ideas.length}个创意，超过期望的${count}个，只取前${count}个`);
+                return ideas.slice(0, count);
+            }
+
+            console.log(`[AI服务] 创意详情:`, ideas);
+
+            return ideas;
+
+        } catch (error) {
+            console.error('[AI服务] ❌ 生成创意失败:', error);
+            console.error('[AI服务] 错误详情:', error.message);
+            return null; // 返回null让UI层处理回退
+        }
+    }
+
+    /**
+     * 解析AI返回的创意内容
+     */
+    parseCreativeIdeas(content) {
+        const ideas = [];
+
+        // 将内容按行分割
+        const lines = content.split('\n');
+        let currentIdea = null;
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+
+            // 检查是否是新的创意开始
+            // 匹配：创意1：、创意 1：、1. 等格式
+            const ideaStartMatch = line.match(/^(?:创意\s*(\d+)[：:]?|(\d+)[\.\、])[\s\-–•\*]*(.*)$/i);
+
+            if (ideaStartMatch) {
+                // 保存之前的创意
+                if (currentIdea) {
+                    ideas.push(currentIdea);
+                }
+
+                // 创建新创意
+                currentIdea = {
+                    title: '',
+                    concept: '',
+                    synopsis: ''
+                };
+
+                // 如果这一行后面还有内容（如"创意1：标题"），提取为标题
+                const remainder = ideaStartMatch[3]?.trim();
+                if (remainder) {
+                    // 如果包含"标题："，提取后面的内容
+                    const titleMatch = remainder.match(/^标题[：:]\s*(.+)/i);
+                    if (titleMatch) {
+                        currentIdea.title = titleMatch[1].trim();
+                    } else {
+                        currentIdea.title = remainder;
+                    }
+                }
+
+                continue;
+            }
+
+            // 如果没有当前创意，跳过
+            if (!currentIdea) continue;
+
+            // 匹配标题行
+            const titleMatch = line.match(/^标题[：:]\s*(.+)/i);
+            if (titleMatch) {
+                currentIdea.title = titleMatch[1].trim();
+                continue;
+            }
+
+            // 匹配概念行
+            const conceptMatch = line.match(/^概念[：:]\s*(.+)/i);
+            if (conceptMatch) {
+                currentIdea.concept = conceptMatch[1].trim();
+                continue;
+            }
+
+            // 匹配梗概行（开始）
+            const synopsisMatch = line.match(/^梗概[：:]\s*(.+)/i);
+            if (synopsisMatch) {
+                currentIdea.synopsis = synopsisMatch[1].trim();
+                currentIdea._parsingSynopsis = true; // 标记正在解析梗概
+                continue;
+            }
+
+            // 匹配外在期待（核心期待 - 外在事件）
+            const externalHookMatch = line.match(/^(?:外在期待|外在钩子|核心期待|外在事件)[：:]\s*(.+)/i);
+            if (externalHookMatch) {
+                currentIdea.externalHook = externalHookMatch[1].trim();
+                currentIdea.hook = currentIdea.externalHook; // 兼容旧字段
+                currentIdea._parsingSynopsis = false; // 结束梗概解析
+                continue;
+            }
+
+            // 匹配内在期待（核心期待 - 内在情感）
+            const internalHookMatch = line.match(/^(?:内在期待|内在钩子|情感钩子|内在情感)[：:]\s*(.+)/i);
+            if (internalHookMatch) {
+                currentIdea.internalHook = internalHookMatch[1].trim();
+                currentIdea._parsingSynopsis = false; // 结束梗概解析
+                continue;
+            }
+
+            // 如果正在解析梗概，且当前行不是新字段的开始，则追加到梗概
+            if (currentIdea?._parsingSynopsis && line) {
+                // 检查是否是下一个创意的开始（必须在追加前检查）
+                if (line.match(/^(?:创意\s*\d+|\d+[\.\、])[：:]/i)) {
+                    currentIdea._parsingSynopsis = false;
+                    // 不追加这一行，让外层循环处理下一个创意
+                } else if (!line.match(/^(标题|概念|外在|内在)[：:]/i)) {
+                    // 只有不是其他字段时，才追加到梗概
+                    currentIdea.synopsis += ' ' + line;
+                }
+            }
+        }
+
+        // 保存最后一个创意
+        if (currentIdea) {
+            ideas.push(currentIdea);
+        }
+
+        console.log(`[创意解析] 原始解析数量: ${ideas.length}`);
+        console.log(`[创意解析] 各创意标题:`, ideas.map((i, idx) => `${idx+1}. ${i.title || '(空)'}`));
+
+        // 过滤掉空创意并确保每个创意有默认值
+        const validIdeas = ideas.filter(idea => {
+            const hasContent = idea.title || idea.concept;
+            if (!hasContent) {
+                console.log(`[创意解析] 过滤掉空创意:`, idea);
+            }
+            return hasContent;
+        }).map((idea, index) => {
+            // 基于创意内容生成智能默认钩子
+            const isContractMarriage = idea.synopsis?.includes('契约') || idea.synopsis?.includes('合同') || idea.concept?.includes('契约');
+            const isIdentityHide = idea.synopsis?.includes('身份') || idea.synopsis?.includes('隐瞒') || idea.concept?.includes('身份');
+            const isRevenge = idea.synopsis?.includes('复仇') || idea.concept?.includes('复仇');
+            const isCinderella = idea.synopsis?.includes('平凡') || idea.synopsis?.includes('普通') || idea.concept?.includes('平凡');
+
+            let defaultExternal = '悬念待揭晓';
+            let defaultInternal = '情感发展待展开';
+
+            if (isContractMarriage) {
+                defaultExternal = '契约关系何时被揭穿/何时到期';
+                defaultInternal = '契约双方何时真正爱上对方而非演戏';
+            } else if (isIdentityHide) {
+                defaultExternal = '男主角的真实身份何时被女主角发现';
+                defaultInternal = '身份揭露后两人的信任如何重建';
+            } else if (isRevenge) {
+                defaultExternal = '复仇计划何时收网/幕后黑手何时现身';
+                defaultInternal = '复仇成功后主角内心的空虚如何填补';
+            } else if (isCinderella) {
+                defaultExternal = '平凡女主角何时让所有人刮目相看';
+                defaultInternal = '女主角何时相信自己配得上男主角';
+            } else {
+                defaultExternal = '男女主角何时打破身份悬殊真正走到一起';
+                defaultInternal = '男主角何时放下骄傲真诚表白，女主角何时不再自卑';
+            }
+
+            // 保守修复：确保梗概不等于概念
+            let finalSynopsis = idea.synopsis;
+            if (!finalSynopsis || finalSynopsis.trim().length < 50) {
+                // 如果梗概太短或为空，使用默认创意的梗概
+                const defaultIdeas = this.getDefaultCreativeIdeas();
+                finalSynopsis = defaultIdeas[index % defaultIdeas.length].synopsis;
+            }
+
+            return {
+                id: `idea-ai-${Date.now()}-${index}`, // 生成唯一ID
+                title: idea.title || 'Untitled Creative Idea',
+                concept: idea.concept || idea.title || 'No concept provided',
+                synopsis: finalSynopsis,
+                externalHook: idea.externalHook || idea.hook || defaultExternal,
+                internalHook: idea.internalHook || defaultInternal,
+                hook: idea.externalHook || idea.hook || defaultExternal, // 兼容旧字段
+                highlights: ['AI生成'],
+                isCustom: false,
+                type: 'AI生成'
+            };
+        });
+
+        console.log(`[AI服务] 解析完成，有效创意数量: ${validIdeas.length}`);
+        validIdeas.forEach((idea, i) => {
+            console.log(`[AI服务] 创意${i+1}: ${idea.title.substring(0, 50)}...`);
+        });
+
+        // 如果创意不足5个，使用模板补齐
+        if (validIdeas.length < 5) {
+            console.warn(`[AI服务] 创意不足5个(${validIdeas.length}个)，使用默认模板补齐`);
+            const defaultIdeas = this.getDefaultCreativeIdeas();
+            while (validIdeas.length < 5) {
+                const defaultIdea = defaultIdeas[validIdeas.length];
+                validIdeas.push({
+                    ...defaultIdea,
+                    id: `idea-default-${Date.now()}-${validIdeas.length}` // 确保唯一ID
+                });
+            }
+        }
+
+        return validIdeas;
+    }
+
+    /**
+     * 生成短剧标题 - 基于创意和角色生成5个标题选项
+     * @param {Object} project - 项目数据
+     * @returns {Promise<Array>} - 标题列表
+     */
+    async generateTitles(project) {
+        if (!this.isAvailable()) {
+            console.warn('AI服务不可用，使用默认标题');
+            return this.generateDefaultTitles(project);
+        }
+
+        // 参数保护
+        if (!project) {
+            console.error('generateTitles: project为空');
+            return this.generateDefaultTitles({typeInfo: {category: 'female'}});
+        }
+
+        const { title, typeInfo, creative, characters } = project;
+
+        // 检查必要参数
+        if (!typeInfo) {
+            console.error('generateTitles: typeInfo缺失', project);
+            return this.generateDefaultTitles(project);
+        }
+
+        const category = typeInfo.category || 'female';
+
+        // 提取主要角色名
+        const protag = characters.find(c => c.role === 'protagonist');
+        const love = characters.find(c => c.role === 'love-interest');
+        const antag = characters.find(c => c.role === 'antagonist');
+
+        const prompt = `作为专业的女频短剧标题策划，请为以下短剧生成5个吸引人的标题。
+
+剧集信息：
+- 类型：${category === 'female' ? '女频' : '男频'} - ${typeInfo.name}
+- 核心创意：${creative?.concept || 'Not specified'}
+- 故事梗概：${creative?.synopsis || 'Not specified'}
+
+主要角色：
+- 主角：${protag?.name || '女主角'} (${protag?.desc?.substring(0, 50) || '善良坚韧的女主角'})
+- 恋爱对象：${love?.name || '男主角'} (${love?.desc?.substring(0, 50) || '高冷霸总'})
+- 反派：${antag?.name || '反派'} (${antag?.desc?.substring(0, 50) || '心机反派'})
+
+标题要求：
+1. 符合欧美女频短剧(Billionaire CEO Romance)的调性
+2. 要有"钩子" - 让人一看就想点进去
+3. 可以包含：The CEO's..., Billionaire's..., Accidental..., Fake..., Secret..., Forced...等关键词
+4. 要有情感张力：契约婚姻、身份反差、先婚后爱、意外邂逅等
+5. 5个标题要风格各异，覆盖不同角度
+6. 每个标题附带一句副标题(slogan/tagline)
+
+格式示例：
+1. The CEO's Accidental Bride
+   When a one-night stand leads to a contract marriage...
+
+2. Billionaire's Fake Fiancée
+   She needed money. He needed a wife. Neither expected love.
+
+3. The Boss's Secret Baby
+   Three years ago, she disappeared. Now she's back with his child.
+
+请生成5个符合上述要求的标题：
+1. [英文主标题]
+   [英文副标题/钩子]
+
+2. [英文主标题]
+   [英文副标题/钩子]
+
+3. [英文主标题]
+   [英文副标题/钩子]
+
+4. [英文主标题]
+   [英文副标题/钩子]
+
+5. [英文主标题]
+   [英文副标题/钩子]`;
+
+        try {
+            console.log('正在调用AI生成标题...');
+
+            const response = await fetch(this.API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.API_KEY}`,
+                    'HTTP-Referer': window.location.href,
+                    'X-Title': 'Short Drama Script Agent'
+                },
+                body: JSON.stringify({
+                    model: this.MODEL,
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are a professional short drama title consultant specializing in catchy, addictive titles for vertical short dramas (竖屏短剧). You create titles that hook viewers immediately.'
+                        },
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
+                    temperature: 0.8,
+                    max_tokens: 2000
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`API请求失败: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const content = data.choices[0].message.content;
+
+            // 解析AI返回的标题
+            const titles = this.parseTitles(content);
+            console.log(`成功生成${titles.length}个标题:`, titles);
+
+            // 如果AI没有生成足够的标题，使用默认标题补齐
+            if (titles.length < 5) {
+                const defaults = this.generateDefaultTitles(project);
+                while (titles.length < 5) {
+                    titles.push(defaults[titles.length]);
+                }
+            }
+
+            return titles;
+
+        } catch (error) {
+            console.error('生成标题失败:', error);
+            return this.generateDefaultTitles(project);
+        }
+    }
+
+    /**
+     * 解析AI返回的标题内容
+     */
+    parseTitles(content) {
+        const titles = [];
+
+        // 尝试匹配 "1. Title" 或 "1. Title\n   Subtitle" 格式
+        const titleRegex = /^\d+[\.\、]\s*(.+?)(?:\n|$)(?:\s*(.+?)(?=\n\d+[\.\、]|$))?/gms;
+
+        let match;
+        while ((match = titleRegex.exec(content)) !== null) {
+            const mainTitle = match[1]?.trim() || '';
+            const subTitle = match[2]?.trim() || '';
+
+            if (mainTitle) {
+                titles.push({
+                    main: mainTitle,
+                    sub: subTitle
+                });
+            }
+        }
+
+        // 如果上面的正则没有匹配到，尝试简单的分行解析
+        if (titles.length === 0) {
+            const lines = content.split('\n').filter(line => line.trim());
+            let currentTitle = null;
+
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+
+                // 检查是否是新的标题开始（包含数字或点号）
+                if (/^\d+[\.\、]/.test(trimmedLine)) {
+                    if (currentTitle) {
+                        titles.push(currentTitle);
+                    }
+
+                    const titleText = trimmedLine.replace(/^\d+[\.\、]\s*/, '').trim();
+                    currentTitle = {
+                        main: titleText,
+                        sub: ''
+                    };
+                } else if (currentTitle && !currentTitle.sub) {
+                    // 可能是副标题
+                    currentTitle.sub = trimmedLine;
+                }
+            }
+
+            if (currentTitle) {
+                titles.push(currentTitle);
+            }
+        }
+
+        return titles;
+    }
+
+    /**
+     * 生成默认标题（当AI失败时使用）
+     */
+    generateDefaultTitles(project) {
+        const typeInfo = project.typeInfo;
+        const category = typeInfo.category;
+        const protag = project.characters.find(c => c.role === 'protagonist');
+        const love = project.characters.find(c => c.role === 'love-interest');
+
+        const protagName = protag?.name || 'The Secretary';
+        const loveName = love?.name || 'The CEO';
+
+        if (category === 'female') {
+            return [
+                {
+                    main: `The CEO's Accidental Bride`,
+                    sub: `When ${protagName} agrees to a fake marriage with ${loveName}, she never expects to fall for real.`
+                },
+                {
+                    main: `Billionaire's Secret Contract`,
+                    sub: `${protagName} needed money. ${loveName} needed a wife. But secrets threaten everything.`
+                },
+                {
+                    main: `Trapped with the Boss`,
+                    sub: `One night. One mistake. And now ${protagName} can't escape ${loveName}'s possessive gaze.`
+                },
+                {
+                    main: `The Tycoon's Fake Fiancée`,
+                    sub: `It's just business... until ${loveName} decides he wants ${protagName} for real.`
+                },
+                {
+                    main: `Seduced by the Billionaire`,
+                    sub: `${loveName} always gets what he wants. And he wants ${protagName}.`
+                }
+            ];
+        } else {
+            return [
+                {
+                    main: `From Zero to Hero`,
+                    sub: `${protagName} was nothing. Now he'll make them all pay.`
+                },
+                {
+                    main: `The Ultimate Revenge`,
+                    sub: `They mocked him. They betrayed him. Now they're begging for mercy.`
+                },
+                {
+                    main: `Rise of the Immortal`,
+                    sub: `${protagName} has returned with power beyond imagination.`
+                },
+                {
+                    main: `Dominating the City`,
+                    sub: `From street rat to kingpin. This is ${protagName}'s empire now.`
+                },
+                {
+                    main: `Unstoppable Ascension`,
+                    sub: `No one believed in him. Now the world will remember his name.`
+                }
+            ];
+        }
+    }
+
+    /**
+     * 生成完整大纲 - 分批生成确保质量
+     * @param {Object} project - 项目数据
+     * @returns {Promise<Array>} - 大纲列表
+     */
+    async generateOutline(project) {
+        if (!this.isAvailable()) {
+            throw new Error('AI服务未配置，请先设置API Key');
+        }
+
+        const totalEpisodes = project.episodes;
+        const allEpisodes = [];
+
+        // 每批5集，确保每批质量（减少每批数量，提高完整度）
+        const batchSize = 5;
+        const batches = Math.ceil(totalEpisodes / batchSize);
+
+        console.log(`开始分批生成大纲，共${totalEpisodes}集，分${batches}批，每批5集...`);
+
+        // 显示分批提示
+        if (window.app && window.app.showBatchProgress) {
+            window.app.showBatchProgress(batches, 0);
+        }
+
+        try {
+            for (let batch = 0; batch < batches; batch++) {
+                const startEp = batch * batchSize + 1;
+                const endEp = Math.min((batch + 1) * batchSize, totalEpisodes);
+
+                console.log(`正在生成第${startEp}-${endEp}集...`);
+
+                const batchOutline = await this.generateBatch(project, startEp, endEp, totalEpisodes);
+                allEpisodes.push(...batchOutline);
+
+                // 更新分批进度
+                if (window.app && window.app.showBatchProgress) {
+                    window.app.showBatchProgress(batches, batch + 1);
+                }
+
+                // 添加小延迟，避免请求过快
+                if (batch < batches - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                }
+            }
+
+            console.log(`全部生成完成，共${allEpisodes.length}集`);
+            return allEpisodes;
+
+        } catch (error) {
+            console.error('批量生成失败:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 生成一批大纲（10集）
+     */
+    async generateBatch(project, startEp, endEp, totalEpisodes) {
+        const prompt = this.buildBatchPrompt(project, startEp, endEp, totalEpisodes);
+
+        const response = await fetch(this.API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.API_KEY}`,
+                'HTTP-Referer': window.location.href,
+                'X-Title': 'Short Drama Script Agent'
+            },
+            body: JSON.stringify({
+                model: this.MODEL,
+                messages: [
+                    {
+                        role: 'system',
+                        content: `你是专业的竖屏短剧编剧，擅长创作欧美背景的短剧剧本。
+
+关键要求：
+1. 使用欧美场景：纽约、洛杉矶、伦敦、曼哈顿等地标
+2. 使用英文人物名：Sophia, Alexander, Emma, Ethan等
+3. 对话用英文（自然的美式/英式英语）
+4. 结果用中文输出（方便阅读）
+5. 严格按格式输出，方便解析
+
+短剧结构要求：
+- 每集必须有三幕结构：开始、发展、高潮结尾
+- 每集结尾必须留钩子，让观众想看下一集
+- 第10-12集必须是付费卡点（情感/身份重大转折）
+- 每3秒一个情节点，节奏紧凈`
+                    },
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ],
+                temperature: 0.8,
+                max_tokens: 8000
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`API调用失败: ${error}`);
+        }
+
+        const data = await response.json();
+        const aiResponse = data.choices[0].message.content;
+
+        console.log(`批次${startEp}-${endEp}响应:`, aiResponse.substring(0, 200) + '...');
+
+        // 解析这批大纲
+        return this.parseBatchOutline(aiResponse, startEp, endEp);
+    }
+
+    /**
+     * 构建批量生成提示词
+     */
+    buildBatchPrompt(project, startEp, endEp, totalEpisodes) {
+        const { title, typeInfo, creative, characters } = project;
+        const category = typeInfo.category;
+
+        // 提取所有角色信息（6个角色体系）
+        const protag = characters.find(c => c.role === 'protagonist');
+        const love = characters.find(c => c.role === 'love-interest');
+        const antag = characters.find(c => c.role === 'antagonist');
+        const antag2 = characters.find(c => c.role === 'antagonist2');
+        const supporting = characters.find(c => c.role === 'supporting');
+        const supporting2 = characters.find(c => c.role === 'supporting2');
+
+        // 生成欧美风格的角色名（如果没有）
+        const westernNames = this.generateWesternNames(characters, category);
+
+        // 构建角色描述部分
+        let characterSection = `
+【角色设定】（使用这些固定名字，不要改）
+- 主角：${westernNames.protag} - ${protag?.desc || '善良坚韧的主角'}
+- ${category === 'female' ? '男主' : '女主'}：${westernNames.love} - ${love?.desc || '关键人物'}
+- 主要反派：${westernNames.antag} - ${antag?.desc || '主要反派'}`;
+
+        // 添加次要反派（如果有）
+        if (antag2) {
+            characterSection += `
+- 次要反派：${antag2.name} - ${antag2.desc || '制造麻烦的辅助反派'}`;
+        }
+
+        // 添加闺蜜/好友（如果有）
+        if (supporting) {
+            characterSection += `
+- 闺蜜/好友：${supporting.name} - ${supporting.desc || '主角的知己和助攻'}`;
+        }
+
+        // 添加喜剧角色（如果有）
+        if (supporting2) {
+            characterSection += `
+- 喜剧角色：${supporting2.name} - ${supporting2.desc || '缓解紧张气氛的角色'}`;
+        }
+
+        return `为欧美短剧《${title}》生成第${startEp}到第${endEp}集大纲（共${totalEpisodes}集的一部分）。
+
+【剧集信息】
+- 剧名：${title}
+- 类型：${category === 'female' ? '女频' : '男频'} - ${typeInfo.name}
+- 本批集数：第${startEp}集到第${endEp}集
+- 总集数：${totalEpisodes}集
+
+【核心创意】
+${creative?.concept || '无详细创意'}
+
+${creative?.synopsis ? `【故事梗概】\n${creative.synopsis}` : ''}
+
+${creative?.externalHook ? `【核心期待 - 外在钩子】\n${creative.externalHook}\n\n必须在剧情中体现此外在悬念，每集都要推进这个钩子。` : ''}
+${creative?.internalHook ? `【核心期待 - 内在钩子】\n${creative.internalHook}\n\n必须在情感线中体现此情感发展，让角色关系逐集递进。` : ''}
+${characterSection}
+
+【钩子类型库 - 每集必须选一种】
+每集结尾必须使用以下钩子类型之一，且必须与剧情深度融合：
+
+**危险与危机类：**
+1. 危险即将发生：车祸、火灾、坠落、被绑架、突发疾病等物理危险
+2. 威胁降临：收到恐吓信/匿名威胁、发现被跟踪、敌人出现
+3. 秘密即将暴露：隐藏的身份/契约/谎言即将被揭穿
+
+**情感与关系类：**
+4. 暧昧即将发生：壁咚即将变成亲吻、手指即将触碰、脸越靠越近被打断
+5. 告白/拒绝即将出口：关键话语已到嘴边，突然被中断
+6. 误会即将加深：一方看到容易产生误会的场景，真相即将揭晓前被打断
+7. 第三者介入：情敌突然出现、前任回归、新追求者表白
+
+**悬念与揭示类：**
+8. 两场戏分两半：关键场景（如婚礼、签约、对峙）进行到一半，突然切换场景
+9. 真相即将揭晓：关键证据出现、秘密文件被发现、知情人即将开口
+10. 反转即将发生：看似弱势的角色突然露出真面目、好人变坏人、局势瞬间逆转
+11. 神秘信息：收到未知来源的照片/录音/消息，内容 shocking
+
+**行动与决策类：**
+12. 追逐即将开始：发现真相后立即追逐、逃离现场、赶往阻止某事
+13. 门即将打开：关键人物站在门外、即将推门而入、房间里的人即将被发现
+14. 即将做不可逆的事：签字、堕胎、离开城市、嫁给不爱的人
+15. 倒计时触发：炸弹倒计时、契约到期前最后一秒、手术即将开始
+
+**特殊钩子（仅限关键集数）：**
+16. 热开场钩子（仅限第1集）：从高潮片段开始，然后切回3天前/1年前
+17. 付费卡点钩子（第10-12集）：情感重大转折或身份暴露的前一秒
+18. 大结局前钩子（倒数第2集）：终极危机，主角看似无法翻身
+
+【本批生成要求】
+${startEp === 1 ? '第1集必须是热开场：开场即冲突/危机（如：婚礼现场被抛弃、颁奖典礼被揭穿、医院急诊室），然后回到故事起点（3天前/1个月前）。第一集结尾钩子必须是危险即将发生或重大悬念。' : ''}
+${startEp <= 10 && endEp >= 10 ? '第10-12集必须是付费卡点：在情感最高潮或身份即将暴露的前一秒戛然而止，钩子必须是真相即将揭晓或重大危机。' : ''}
+${endEp === totalEpisodes ? `第${totalEpisodes}集必须是大结局：解决所有悬念，但要留一个温馨的开放式结尾钩子（如：怀孕、求婚、新机遇），让观众意犹未尽。` : ''}
+
+${category === 'female' ? `
+【ROM-COM浪漫喜剧元素 - 必须包含】
+作为Billionaire CEO霸道总裁类女频短剧，必须融入以下浪漫喜剧桥段（参考《Pretty Woman》《The Proposal》《Bridgerton》等）：
+
+1. **意外亲密接触** (每3-4集至少1次):
+   - 摔倒被接住（accidental catch）
+   - 被迫挤在狭小空间（elevator/stuck together）
+   - 擦药/整理衣领等近身接触
+   - 意外亲吻（almost kiss或accidental kiss）
+
+2. **醋意与占有欲** (每5集至少2次):
+   - 男主看到女主和其他男性说话，冷脸介入
+   - "She's with me" 宣示主权
+   - 故意在情敌面前亲密
+   - 嫉妒后的强势壁咚
+
+3. **甜蜜惩罚/调戏**:
+   - "You're testing my patience"（你在考验我的耐心）
+   - "Don't play with fire"（别玩火）
+   - 把女主困在臂弯里（arm trap against wall）
+   - 捏下巴、撩头发等小动作
+
+4. **反差萌时刻**:
+   - 冷面总裁为女主做傻事（买零食、排队、被拉去游乐场）
+   - 只有女主能看到他的温柔一面
+   - 在员工面前威严，在女主面前无奈
+
+5. **被迫同居/假戏真做**:
+   - 契约婚姻但动心
+   - "Just business" 但眼神出卖
+   - 同床共枕但什么都没发生（tension）
+   - 早晨醒来看到对方睡颜
+
+6. **英雄救美变种**:
+   - 不仅是救场，还要"My woman, no one touches"
+   - 事后既生气又心疼："You could have been hurt"
+   - 惩罚式保护："You're not leaving my sight"
+
+7. **幽默对白要求**:
+   - 女主 sassiness（ sass回怼总裁）
+   - 男主 dry humor（冷幽默）
+   - 双方 verbal sparring（言语交锋）
+   - 误会时的comedic timing
+
+8. **经典场景必须出现**:
+   - 雨中对峙/告白
+   - 舞会/慈善晚宴惊艳亮相
+   - 办公室 desk romance（桌子上的张力）
+   - 女主醉酒吐真言
+   - 男主为女主下厨/照顾生病的她
+   - 一起洗澡/泡温泉（tension但不越界）
+` : ''}
+
+【每集格式要求 - 钩子必须融入剧情】
+必须严格按照以下格式，每集包含：
+
+第X集：《英文标题》（中文翻译）
+场景：具体的欧美地点（如：Manhattan Penthouse, LA Nightclub, London Office）
+剧情：详细剧情（200-250字），要求：
+  - 【强制的剧情结构】：
+    * 开始（10%）：热开场！直接切入冲突或紧张场景，不要铺垫
+    * 发展（60%）：高密度冲突，每10秒一个情节点，不能拖沓
+    * 高潮（20%）：强烈反转/情感爆发，让观众尖叫
+    * 结尾（10%）：强钩子融入最后一幕，让观众必须点击下一集
+  - 【冲突密度要求】：
+    * 每集至少3个冲突点（误解、对抗、危机、情感拉扯）
+    * 冲突不能解决得太快，要一波三折
+    * 主角必须遇到至少2次阻碍/失败
+  - 【钩子融入要求】：
+    * 从"钩子类型库"中选择一种钩子
+    * 钩子必须是剧情的高潮点，不能单独说明
+    * ❌ 错误：单独列出"钩子：男主出现"
+    * ✅ 正确："电梯门打开，Sophia抬头，Alexander站在门口，手里拿着她以为丢失的设计稿，眼神复杂地看着她..."
+    * 最后一句话必须是画面+悬念（让观众看到画面就想知道后续）
+  - 英文对话（简短有力，每句都有潜台词或情感张力）
+  - 具体动作和表情描写（特写镜头式描写）
+  - 情感逻辑：每集情感必须有明确推进，不能原地踏步
+  - 节奏：每3秒一个情节点，快节奏高密度
+爽点：本集的具体爽点（打脸/反转/甜蜜瞬间/身份揭示）
+钩子类型：明确标注使用的是哪种钩子（如：危险即将发生/暧昧即将发生/真相即将揭晓）
+时长：90秒
+
+【情感连续性规则 - 必须遵守】
+1. **热开场要求**（第1集）：开场必须是高潮片段或强烈冲突，让观众瞬间入戏
+2. **钩子回应**：第2集起，第一幕必须回应上一集的钩子（继续被中断的场景或解释悬念）
+3. **情感递进**：每集情感必须有明显推进，用数字标注进度（如：吸引40%→吸引65%）
+4. **剧情串联**：上一集的道具/秘密/误会，本集必须有直接后续，不能不了了之
+5. **钩子强化**：每集结尾钩子必须比上一集更强，剧情越来越紧张
+6. **冲突升级**：本集冲突必须比上一集更严重，主角处境越来越艰难（直到大结局前）
+
+【必须遵守的规则】
+1. 使用英文名字：${westernNames.protag}, ${westernNames.love}, ${westernNames.antag}
+2. 使用欧美场景：纽约、洛杉矶、伦敦等地标
+3. 对话用英文（自然美式/英式英语）
+4. 用中文输出结果
+5. 确保生成${startEp}到${endEp}所有集数，不能遗漏
+6. 每集剧情独立完整，但必须与上下集有情感逻辑连接
+7. **钩子融入剧情**：不要把钩子单独列出，而是写在剧情的最后一句话/场景中
+8. **情感递进**：每集情感必须比上一集推进（如：第3集是误会→第4集必须是误会加深或开始化解）
+
+请开始生成第${startEp}到第${endEp}集的详细大纲：`;
+    }
+
+    /**
+     * 生成欧美风格角色名
+     */
+    generateWesternNames(characters, category) {
+        // 女频常用名
+        const femaleProtagonists = ['Sophia', 'Emma', 'Olivia', 'Ava', 'Isabella', 'Mia', 'Charlotte', 'Amelia'];
+        const femaleLoveInterests = ['Alexander', 'Ethan', 'Michael', 'William', 'James', 'Benjamin', 'Lucas', 'Henry'];
+        const femaleAntagonists = ['Victoria', 'Catherine', 'Natalie', 'Isabelle', 'Gabriella', 'Samantha'];
+
+        // 男频常用名
+        const maleProtagonists = ['Ethan', 'Michael', 'James', 'William', 'Alexander', 'Benjamin', 'Lucas', 'Henry'];
+        const maleLoveInterests = ['Sophia', 'Emma', 'Olivia', 'Ava', 'Isabella', 'Mia', 'Charlotte'];
+        const maleAntagonists = ['Richard', 'Charles', 'Edward', 'Daniel', 'Matthew', 'Joseph'];
+
+        const protag = characters.find(c => c.role === 'protagonist');
+        const love = characters.find(c => c.role === 'love-interest');
+        const antag = characters.find(c => c.role === 'antagonist');
+
+        return {
+            protag: protag?.name || (category === 'female' ?
+                femaleProtagonists[Math.floor(Math.random() * femaleProtagonists.length)] :
+                maleProtagonists[Math.floor(Math.random() * maleProtagonists.length)]),
+            love: love?.name || (category === 'female' ?
+                femaleLoveInterests[Math.floor(Math.random() * femaleLoveInterests.length)] :
+                maleLoveInterests[Math.floor(Math.random() * maleLoveInterests.length)]),
+            antag: antag?.name || (category === 'female' ?
+                femaleAntagonists[Math.floor(Math.random() * femaleAntagonists.length)] :
+                maleAntagonists[Math.floor(Math.random() * maleAntagonists.length)])
+        };
+    }
+
+    /**
+     * 解析批量生成的大纲
+     */
+    parseBatchOutline(aiText, startEp, endEp) {
+        const episodes = [];
+        const lines = aiText.split('\n').filter(line => line.trim());
+
+        let currentEpisode = null;
+        let currentEpNumber = null;
+
+        for (const line of lines) {
+            // 匹配集数标题：第X集：《标题》或第X集 或 Episode X
+            const episodeMatch = line.match(/第\s*(\d+)\s*集[:：]\s*《?([^》]+)》?/) ||
+                                 line.match(/Episode\s+(\d+)[:\-\s]+["《]?([^"》]+)["》]?/i);
+
+            if (episodeMatch) {
+                // 保存上一集
+                if (currentEpisode && currentEpNumber !== null) {
+                    episodes.push(currentEpisode);
+                }
+
+                currentEpNumber = parseInt(episodeMatch[1]);
+                currentEpisode = {
+                    episodeNumber: currentEpNumber,
+                    title: episodeMatch[2]?.trim() || `第${currentEpNumber}集`,
+                    content: '',
+                    hook: '',
+                    act: this.getActByEpisode(currentEpNumber, endEp),
+                    isTwist: false,
+                    isClimax: currentEpNumber === endEp,
+                    isFirst: currentEpNumber === 1,
+                    isFinal: currentEpNumber === endEp,
+                    estimatedDuration: 90
+                };
+            } else if (currentEpisode) {
+                // 解析其他字段
+                const lowerLine = line.toLowerCase();
+
+                if (lowerLine.includes('剧情') || lowerLine.includes('plot')) {
+                    currentEpisode.content += line.replace(/.*[:：]/, '').trim() + '\n';
+                } else if (lowerLine.includes('钩子') || lowerLine.includes('hook')) {
+                    currentEpisode.hook = line.replace(/.*[:：]/, '').trim();
+                } else if (lowerLine.includes('爽点') || lowerLine.includes('反转') || lowerLine.includes('twist')) {
+                    currentEpisode.content += '【' + line.trim() + '】\n';
+                } else if (lowerLine.includes('场景') || lowerLine.includes('setting')) {
+                    currentEpisode.content += '[场景: ' + line.replace(/.*[:：]/, '').trim() + ']\n';
+                } else if (lowerLine.includes('时长') || lowerLine.includes('duration')) {
+                    const duration = line.match(/(\d+)/);
+                    if (duration) {
+                        currentEpisode.estimatedDuration = parseInt(duration[1]);
+                    }
+                } else {
+                    currentEpisode.content += line + '\n';
+                }
+            }
+        }
+
+        // 添加最后一集
+        if (currentEpisode && currentEpNumber !== null) {
+            episodes.push(currentEpisode);
+        }
+
+        // 标记反转集
+        episodes.forEach((ep, index) => {
+            if (index > 0 && index < episodes.length - 1) {
+                if (ep.content.includes('反转') || ep.content.includes('真相') ||
+                    ep.content.toLowerCase().includes('twist') || ep.content.toLowerCase().includes('reveal')) {
+                    ep.isTwist = true;
+                }
+            }
+        });
+
+        // 检查是否生成了足够的集数
+        const expectedCount = endEp - startEp + 1;
+        if (episodes.length < expectedCount) {
+            console.warn(`批次生成不足: 期望${expectedCount}集, 实际${episodes.length}集`);
+            // 补充缺失的集数
+            for (let i = startEp; i <= endEp; i++) {
+                if (!episodes.find(ep => ep.episodeNumber === i)) {
+                    episodes.push({
+                        episodeNumber: i,
+                        title: `第${i}集`,
+                        content: '[该集内容缺失，请重新生成本批次]',
+                        hook: 'To be continued...',
+                        act: this.getActByEpisode(i, endEp),
+                        isTwist: false,
+                        isClimax: i === endEp,
+                        isFirst: i === 1,
+                        isFinal: i === endEp,
+                        estimatedDuration: 90
+                    });
+                }
+            }
+        }
+
+        // 按集数排序
+        return episodes.sort((a, b) => a.episodeNumber - b.episodeNumber);
+    }
+
+    /**
+     * 构建提示词
+     */
+    buildPrompt(project) {
+        const { title, typeInfo, creative, characters, episodes } = project;
+
+        // 提取关键信息
+        const protag = characters.find(c => c.role === 'protagonist');
+        const love = characters.find(c => c.role === 'love-interest');
+        const antag = characters.find(c => c.role === 'antagonist');
+
+        const category = typeInfo.category; // 'female' | 'male'
+        const typeName = typeInfo.nameEn || typeInfo.name; // Use English name
+
+        return `Generate a detailed outline for a ${episodes}-episode vertical short drama series.
+
+CRITICAL: Write everything in English. Use Western settings and names. Do NOT use Chinese names or locations.
+
+SHOW INFORMATION:
+- Title: ${title}
+- Genre: ${category === 'female' ? 'Female-Oriented' : 'Male-Oriented'} - ${typeName}
+- Total Episodes: ${episodes} (1-3 minutes each)
+
+CORE CONCEPT:
+${creative?.concept || 'No detailed concept provided'}
+
+${creative?.synopsis ? `STORY SYNOPSIS:\n${creative.synopsis}` : ''}
+
+${creative?.externalHook ? `CORE HOOK:\n${creative.externalHook}` : ''}
+
+MAIN CHARACTERS (Use These Names):
+${protag ? `Protagonist: ${protag.name} - ${protag.desc || 'Main character'}` : ''}
+${love ? `Love Interest: ${love.name} - ${love.desc || 'Key figure'}` : ''}
+${antag ? `Antagonist: ${antag.name} - ${antag.desc || 'Main villain'}` : ''}
+
+REQUIRED FORMAT - STRICTLY FOLLOW THIS FOR ALL ${episodes} EPISODES:
+
+Episode [Number]: "[Episode Title]"
+Setting: [Specific Western Location - e.g., Manhattan Penthouse, LA Nightclub, London Office, NYC Coffee Shop]
+Plot: [Detailed 200-word plot with specific actions and dialogue in English]
+Twist/Highlight: [Face-slapping moment, emotional peak, or plot twist]
+Hook: [Strong cliffhanger ending that makes viewers want Episode X+1]
+Duration: [Seconds]
+
+${category === 'female' ? `GENRE REQUIREMENTS (Female-Oriented):
+- Episode 1: Female lead humiliated publicly, male lead saves her, plant mystery "why is he helping me"
+- Episodes 10-12: PAYWALL CLIFFFHANGER - Major emotional turning point (forced kiss, identity reveal, or betrayal)
+- Focus: Emotional push-pull, forced proximity, misunderstandings, sweet moments, female lead's growth
+- Every episode ending: Emotional hook (deepening misunderstanding, true feelings revealed, or crisis strikes)
+- Include: Accidental intimate contact, jealousy scenes, protective male lead moments, public declarations
+- Western tropes: Contract marriage, secret identity, amnesia, return of ex, rich vs poor dynamics`
+:
+`GENRE REQUIREMENTS (Male-Oriented):
+- Episode 1: Male lead publicly humiliated, immediate small counterattack, reveals hint of hidden power
+- Episodes 10-12: PAYWALL CLIFFFHANGER - Identity exposure or major crisis
+- Focus: Power progression, face-slapping, identity reveals, crushing enemies, collecting powerful allies
+- Every episode ending: Power hook (about to face-slap, identity mystery, or powerful enemy appears)
+- Include: Undercover boss moments, hidden skills revealed, arrogant rich kids getting destroyed, beautiful women impressed
+- Western tropes: Secret billionaire, returned soldier, hidden martial arts master, tech genius, mafia heir`}
+
+EXAMPLE FORMAT:
+
+Episode 1: "Humiliation and Salvation"
+Setting: ${category === 'female' ? 'The Plaza Hotel, New York - Grand Ballroom' : 'Downtown Chicago Construction Site'}
+Plot: ${category === 'female' ?
+`Sophia stands at the altar in her wedding dress, waiting for groom Richard. Suddenly, her best friend Jessica bursts in, waving intimate photos with Richard. The crowd gasps. Sophia is humiliated, turned into a laughingstock. Just as she breaks down, mysterious Alexander Blackwood (billionaire CEO of Blackwood Industries) descends from the VIP balcony. He announces coldly: "This wedding ends now." He whisks Sophia away in his Rolls Royce, but in the car warns: "Don\'t get ideas. I need you for a contract."` :
+`Ethan (delivery guy in worn jeans) brings food to the site, when rich kid Tyler dumps soup on his head publicly. Everyone laughs. Tyler tries to stomp Ethan\'s hand, but Ethan\'s eyes flash cold. He crushes Tyler\'s wrist with one hand! Dead silence. Ethan says quietly: "You think I\'m here to deliver food? I\'m here to buy this building." Workers shocked, Tyler screams in pain.`
+}
+Twist/Highlight: ${category === 'female' ? 'Female lead publicly saved, temporary humiliation but sets up comeback' : 'Male lead\'s violent counterattack after enduring'}
+Hook: ${category === 'female' ? 'Why is Alexander helping Sophia? What does he want?' : 'What is Ethan\'s real identity? Why does he want the building?'}
+Duration: 90 seconds
+
+IMPORTANT RULES:
+1. Generate ALL ${episodes} EPISODES in this exact format
+2. Each episode MUST have specific Western settings (NYC, LA, London, etc.)
+3. Use English names ONLY (Sophia, Emma, Alexander, Ethan, NOT Chinese names)
+4. Include natural English dialogue with actions in parentheses
+5. Every 3 seconds of video = plot point or emotional beat
+6. Episodes 10-12 must be STRONG paywall cliffhangers
+7. Make each episode feel like a mini-movie with beginning, middle, end
+8. NO summaries - write like actual screenplay scenes with dialogue!
+
+Begin generating all ${episodes} episodes now:`;
+    }
+
+    /**
+     * 解析AI响应为结构化数据
+     */
+    parseOutline(aiText, totalEpisodes) {
+        const episodes = [];
+        const lines = aiText.split('\n').filter(line => line.trim());
+
+        let currentEpisode = null;
+
+        for (const line of lines) {
+            // 匹配集数标题：支持中英文格式
+            // 中文：第1集：《标题》 或 第1集《标题》 或 第1集
+            // 英文：Episode 1: "Title" 或 Episode 1 - Title 或 Episode 1
+            const episodeMatch = line.match(/第\s*(\d+)\s*集[:：]《?([^》]+)》?/) ||
+                                 line.match(/Episode\s+(\d+)[:\-\s]+["《]?([^"》]+)["》]?/i);
+
+            if (episodeMatch) {
+                // 保存上一集
+                if (currentEpisode) {
+                    episodes.push(currentEpisode);
+                }
+
+                const epNum = parseInt(episodeMatch[1]);
+                currentEpisode = {
+                    episodeNumber: epNum,
+                    title: episodeMatch[2]?.trim() || `第${epNum}集`,
+                    content: '',
+                    hook: '',
+                    act: this.getActByEpisode(epNum, totalEpisodes),
+                    isTwist: false,
+                    isClimax: epNum === totalEpisodes,
+                    isFirst: epNum === 1,
+                    isFinal: epNum === totalEpisodes,
+                    estimatedDuration: 90
+                };
+            } else if (currentEpisode) {
+                // 解析其他字段 - 支持中英文
+                const lowerLine = line.toLowerCase();
+
+                if (lowerLine.includes('plot:') || lowerLine.includes('剧情') || lowerLine.includes('plot：')) {
+                    currentEpisode.content += line.replace(/.*[:：]/, '').trim() + '\n';
+                } else if (lowerLine.includes('hook:') || lowerLine.includes('钩子') || lowerLine.includes('hook：')) {
+                    currentEpisode.hook = line.replace(/.*[:：]/, '').trim();
+                } else if (lowerLine.includes('twist:') || lowerLine.includes('highlight:') ||
+                          lowerLine.includes('爽点') || lowerLine.includes('虐点') || lowerLine.includes('反转')) {
+                    currentEpisode.content += '[' + line.trim() + ']\n';
+                } else if (lowerLine.includes('setting:') || lowerLine.includes('场景') || lowerLine.includes('setting：')) {
+                    currentEpisode.content += '[Setting: ' + line.replace(/.*[:：]/, '').trim() + ']\n';
+                } else if (lowerLine.includes('duration:') || lowerLine.includes('时长') || lowerLine.includes('duration：')) {
+                    const duration = line.match(/(\d+)/);
+                    if (duration) {
+                        currentEpisode.estimatedDuration = parseInt(duration[1]);
+                    }
+                } else {
+                    currentEpisode.content += line + '\n';
+                }
+            }
+        }
+
+        // 添加最后一集
+        if (currentEpisode) {
+            episodes.push(currentEpisode);
+        }
+
+        // 标记反转集
+        episodes.forEach((ep, index) => {
+            if (index > 0 && index < episodes.length - 1) {
+                if (ep.content.includes('反转') || ep.content.includes('真相') || ep.content.includes('暴露') ||
+                    ep.content.toLowerCase().includes('twist') || ep.content.toLowerCase().includes('reveal')) {
+                    ep.isTwist = true;
+                }
+            }
+        });
+
+        // 安全检查：是否生成足够的集数
+        if (episodes.length < totalEpisodes) {
+            console.warn(`警告: AI只生成了${episodes.length}集，需要${totalEpisodes}集。建议重新生成。`);
+            // 自动补充缺失的集数（用占位符）
+            for (let i = episodes.length + 1; i <= totalEpisodes; i++) {
+                episodes.push({
+                    episodeNumber: i,
+                    title: `Episode ${i}`,
+                    content: '[Content missing - please regenerate]',
+                    hook: 'To be continued...',
+                    act: this.getActByEpisode(i, totalEpisodes),
+                    isTwist: false,
+                    isClimax: i === totalEpisodes,
+                    isFirst: i === 1,
+                    isFinal: i === totalEpisodes,
+                    estimatedDuration: 90
+                });
+            }
+        }
+
+        return episodes;
+    }
+
+    /**
+     * 根据集数确定幕
+     */
+    getActByEpisode(epNum, total) {
+        if (epNum <= total * 0.2) return 'act1';
+        if (epNum <= total * 0.6) return 'act2';
+        if (epNum <= total * 0.85) return 'act3';
+        return 'act4';
+    }
+
+    /**
+     * 测试API连接
+     */
+    async testConnection() {
+        if (!this.API_KEY) return false;
+
+        try {
+            const response = await fetch(this.API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${this.API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: this.MODEL,
+                    messages: [{ role: 'user', content: '你好' }],
+                    max_tokens: 10
+                })
+            });
+
+            return response.ok;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
+     * 基于分集大纲生成完整剧本
+     */
+    async generateFullScript(project, outline, onProgress = null) {
+        if (!this.isAvailable()) {
+            throw new Error('AI服务未配置，请先设置API Key');
+        }
+
+        const fullScript = [];
+        const totalEpisodes = outline.length;
+
+        // 逐集生成，确保每集质量
+        for (let i = 0; i < totalEpisodes; i++) {
+            const episode = outline[i];
+            console.log(`正在生成第${episode.episodeNumber}集剧本...`);
+
+            try {
+                // 准备前一集的上下文（用于连续性）
+                let previousEpisodeSummary = '';
+                if (i > 0) {
+                    const prevEp = outline[i - 1];
+                    const prevContent = prevEp.content || '';
+
+                    // 内联：提取情感状态
+                    let emotionalState = 'Neutral';
+                    if (prevContent.includes('愤怒') || prevContent.includes('angry')) emotionalState = 'Angry';
+                    else if (prevContent.includes('伤心') || prevContent.includes('sad')) emotionalState = 'Heartbroken';
+                    else if (prevContent.includes('开心') || prevContent.includes('happy')) emotionalState = 'Happy';
+                    else if (prevContent.includes('爱意') || prevContent.includes('love')) emotionalState = 'Loving';
+                    else if (prevContent.includes('嫉妒') || prevContent.includes('jealous')) emotionalState = 'Jealous';
+
+                    // 内联：提取关系状态
+                    let relationshipStatus = 'Neutral';
+                    if (prevContent.includes('亲密') || prevContent.includes('kiss')) relationshipStatus = 'Growing closer';
+                    else if (prevContent.includes('误会') || prevContent.includes('争吵')) relationshipStatus = 'Conflict/Tension';
+                    else if (prevContent.includes('陌生') || prevContent.includes('冷漠')) relationshipStatus = 'Distant';
+                    else if (prevContent.includes('合作') || prevContent.includes('和好')) relationshipStatus = 'Cooperative';
+
+                    previousEpisodeSummary = `
+Previous Episode (${prevEp.episodeNumber}) Summary:
+- Title: ${prevEp.title}
+- What happened: ${prevEp.content?.substring(0, 300) || 'N/A'}...
+- Emotional state at end: ${emotionalState}
+- Characters' relationship status: ${relationshipStatus}
+                    `.trim();
+                } else {
+                    previousEpisodeSummary = 'This is the first episode. No previous context needed.';
+                }
+
+                const scriptEpisode = await this.generateEpisodeScript(
+                    project,
+                    episode,
+                    i + 1,
+                    totalEpisodes,
+                    previousEpisodeSummary
+                );
+                fullScript.push(scriptEpisode);
+
+                // 更新进度
+                if (onProgress) {
+                    onProgress(i + 1, totalEpisodes);
+                }
+
+                // 添加小延迟，避免请求过快
+                if (i < totalEpisodes - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+
+            } catch (error) {
+                console.error(`第${episode.episodeNumber}集生成失败:`, error);
+                // 如果某集失败，添加占位符继续
+                fullScript.push({
+                    episodeNumber: episode.episodeNumber,
+                    title: episode.title,
+                    content: '[该集剧本生成失败，请重新生成]',
+                    error: true
+                });
+            }
+        }
+
+        return fullScript;
+    }
+
+    /**
+     * 生成单集详细剧本
+     */
+    async generateEpisodeScript(project, episode, currentNum, totalNum, previousEpisodeSummary = '') {
+        const { title, typeInfo, creative, characters } = project;
+        const category = typeInfo.category;
+
+        // 获取所有角色信息（6个角色体系）
+        const protag = characters.find(c => c.role === 'protagonist');
+        const love = characters.find(c => c.role === 'love-interest');
+        const antag = characters.find(c => c.role === 'antagonist');
+        const antag2 = characters.find(c => c.role === 'antagonist2');
+        const supporting = characters.find(c => c.role === 'supporting');
+        const supporting2 = characters.find(c => c.role === 'supporting2');
+
+        // 构建角色列表
+        let characterList = `- Protagonist: ${protag?.name || 'Sophia'}
+- ${category === 'female' ? 'Male Lead' : 'Female Lead'}: ${love?.name || 'Alexander'}
+- Primary Antagonist: ${antag?.name || 'Victoria'}`;
+
+        if (antag2) {
+            characterList += `
+- Secondary Antagonist: ${antag2.name}`;
+        }
+        if (supporting) {
+            characterList += `
+- Best Friend/Supporting: ${supporting.name}`;
+        }
+        if (supporting2) {
+            characterList += `
+- Comic Relief: ${supporting2.name}`;
+        }
+
+        const prompt = `Based on the following episode outline, write a complete Hollywood-formatted screenplay episode.
+
+SERIES INFO:
+- Title: ${title}
+- Genre: ${category === 'female' ? 'Female-Oriented' : 'Male-Oriented'} - ${typeInfo.name}
+- Episode: ${episode.episodeNumber} of ${totalNum}
+
+CHARACTERS (CRITICAL - USE THESE EXACT NAMES ONLY):
+${characterList}
+
+⚠️ WARNING: Do NOT create new Chinese names. ONLY use the English names listed above.
+⚠️ All dialogue must use these exact character names.
+⚠️ Use supporting characters (best friend, comic relief) naturally in the episode.
+
+EPISODE OUTLINE TO EXPAND:
+Episode ${episode.episodeNumber}: "${episode.title}"
+Setting: ${this.extractSetting(episode.content)}
+Plot Summary: ${episode.content?.replace(/\[.*?\]/g, '') || 'No summary'}
+
+PREVIOUS EPISODE CONTEXT:
+${previousEpisodeSummary}
+
+REQUIREMENTS:
+1. HOLLYWOOD FORMAT (standard screenplay format)
+2. ENGLISH ONLY (natural American English dialogue)
+3. MAX 2 PAGES (concise and tight)
+4. ${episode.episodeNumber === 1 ? '**HOT OPENING**: Start IN MEDIAS RES (in the middle of action/crisis/conflict). NO slow buildup. Begin with the most intense moment, then you can flashback to story start if needed.' : 'CONTINUITY REQUIREMENTS:\n   - FIRST SCENE: Must directly continue from previous episode\'s hook'}
+   - CHARACTER ARC: Show emotional progress from previous episode
+   - RELATIONSHIP DYNAMICS: If relationship changed in last episode, reflect it immediately
+   - EMOTIONAL STATE: Characters' emotions must flow naturally from previous events
+5. DIALOGUE MUST BE:
+   - Clever and witty (not plain)
+   - Colloquial and natural (how real people talk)
+   - Short sentences for vertical drama pacing
+   - Include subtext (what's NOT being said)
+   - Reflect relationship changes and emotional progress
+6. PLOT MUST BE:
+   - HIGH CONFLICT DENSITY: At least 3 conflicts per episode (misunderstanding, confrontation, crisis, emotional tension)
+   - TWISTS AND REVERSALS: Never let the protagonist succeed easily, at least 2 setbacks per episode
+   - EMOTIONAL INTENSITY: Every dialogue must have subtext, every scene must have tension
+   - BASED ON OUTLINE: Follow the provided outline strictly but enhance the drama
+   - ESCALATING TENSION: Each episode must end in a worse situation than it started (until finale)
+   - VISUAL STAKES: Show the protagonist losing something valuable, facing humiliation, or risking it all
+7. ENDING REQUIREMENT - HOOK INTEGRATION (CRITICAL):
+   - The final scene MUST end with the cliffhanger described in the outline
+   - Hook types to choose from: Danger approaching, Interrupted scene, Almost kiss/touch, Truth revealing, Chase starting, Door opening, Threat arriving, Secret exposed
+   - Last moment must be a VISUAL IMAGE that makes audience want to click next episode
+   - Example: "The elevator doors close on their faces inches apart, the tension palpable. Just as their lips almost meet—DING. The doors open. Alexander stands there, his face dark with fury."
+   - Must NOT resolve the hook in this episode
+   - Last line must create immediate suspense or anticipation
+
+HOLLYWOOD SCREENPLAY FORMAT:
+
+FADE IN:
+
+INT. LOCATION - TIME OF DAY
+
+Action description in present tense. Keep it visual and concise.
+
+CHARACTER NAME
+Dialogue here. Natural, not on-the-nose. Include
+pauses, interruptions, and subtext.
+
+CHARACTER NAME (cont'd)
+Continue dialogue if broken by action.
+
+CHARACTER NAME (V.O.)
+Voice over narration (use sparingly).
+
+CHARACTER NAME (O.S.)
+Off-screen dialogue.
+
+CUT TO:
+Next scene.
+
+SMASH CUT TO:
+For dramatic transitions.
+
+FADE OUT.
+
+IMPORTANT RULES:
+- Show, don't tell (visual storytelling)
+- Each scene has conflict or tension
+- Dialogue reveals character
+- End with a hook that connects to next episode
+- Keep it under 2 pages (about 300-500 words)
+
+Write the complete screenplay for Episode ${episode.episodeNumber} now:`;
+
+        const response = await fetch(this.API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.API_KEY}`,
+                'HTTP-Referer': window.location.href,
+                'X-Title': 'Short Drama Script Agent'
+            },
+            body: JSON.stringify({
+                model: this.MODEL,
+                messages: [
+                    {
+                        role: 'system',
+                        content: `You are a professional Hollywood screenwriter specializing in short-form vertical dramas. You write in standard Hollywood screenplay format with sharp dialogue and strong visual storytelling.`
+                    },
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ],
+                temperature: 0.85,
+                max_tokens: 2000  // 每集约500-800字
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Failed to generate episode ${episode.episodeNumber}`);
+        }
+
+        const data = await response.json();
+        let scriptContent = data.choices[0].message.content;
+
+        // 后处理：确保使用正确的角色名字
+        scriptContent = this.enforceCharacterNames(scriptContent, characters);
+
+        return {
+            episodeNumber: episode.episodeNumber,
+            title: episode.title,
+            content: scriptContent,
+            hook: episode.hook,
+            isTwist: episode.isTwist,
+            isClimax: episode.isClimax,
+            isFirst: episode.isFirst,
+            isFinal: episode.isFinal,
+            estimatedDuration: episode.estimatedDuration
+        };
+    }
+
+    /**
+     * 强制使用正确的角色名字（后处理）
+     */
+    enforceCharacterNames(content, characters) {
+        // 常见的中文名字模式（如果AI错误地使用了中文名，替换为英文名）
+        const protag = characters.find(c => c.role === 'protagonist');
+        const love = characters.find(c => c.role === 'love-interest');
+        const antag = characters.find(c => c.role === 'antagonist');
+
+        // 如果内容中包含典型的中文名字（2-3个汉字），尝试替换
+        // 这里使用简单的启发式方法：如果名字不在我们的角色列表中，可能是AI自创的中文名
+        const characterNames = characters.map(c => c.name).filter(name => name && name.length > 0);
+
+        // 检查每一行对话的角色名
+        const lines = content.split('\n');
+        const processedLines = lines.map(line => {
+            // 匹配大写的角色名（剧本格式）
+            const charMatch = line.match(/^([A-Z][A-Z\s]*)$/);
+            if (charMatch) {
+                const name = charMatch[1].trim();
+                // 如果这个名字不在我们的角色列表中，且看起来像中文（包含非英文字符）
+                if (!characterNames.some(cn => cn.toUpperCase() === name) && /[^\x00-\x7F]/.test(name)) {
+                    // 根据上下文替换为最接近的角色
+                    // 简单策略：第一幕通常是主角，第二幕是恋爱对象，第三幕是反派
+                    return protag ? protag.name.toUpperCase() : name;
+                }
+            }
+            return line;
+        });
+
+        return processedLines.join('\n');
+    }
+
+    /**
+     * 从大纲内容中提取场景信息
+     */
+    extractSetting(content) {
+        if (!content) return 'TBD';
+        const settingMatch = content.match(/\[场景:\s*(.+?)\]/);
+        return settingMatch ? settingMatch[1] : 'Various locations';
+    }
+}
+
+// 创建全局实例
+const aiService = new AIService();
+
+// 绑定到window对象，供UI层使用
+if (typeof window !== 'undefined') {
+    window.aiService = aiService;
+    console.log('AI服务已初始化并绑定到window.aiService');
+}
+
+// 兼容导出
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { AIService, aiService };
+}

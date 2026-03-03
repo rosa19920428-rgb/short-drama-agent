@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>诊断页面</title>
+</head>
+<body>
+    <h1>文件加载诊断</h1>
+    <div id="status">正在检查...</div>
+
+    <script>
+        const files = [
+            'js/types.js',
+            'js/engine.js',
+            'js/ui.js',
+            'css/styles.css',
+            'index.html'
+        ];
+
+        async function checkFiles() {
+            const results = [];
+            for (const file of files) {
+                try {
+                    const response = await fetch(file, { method: 'HEAD' });
+                    results.push(`${file}: ${response.ok ? '✓ 存在' : '✗ 不存在'} (${response.status})`);
+                } catch (e) {
+                    results.push(`${file}: ✗ 错误 - ${e.message}`);
+                }
+            }
+            document.getElementById('status').innerHTML = results.join('<br>');
+        }
+
+        checkFiles();
+    </script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test</title>
+</head>
+<body>
+    <h1>测试页面</h1>
+    <button onclick="testFunction()">点击测试</button>
+    <div id="result"></div>
+
+    <script src="js/types.js"></script>
+    <script src="js/engine.js"></script>
+    <script>
+        function testFunction() {
+            try {
+                const engine = new StoryEngine();
+                engine.initProject('underdog-revenge', 50, 90, '测试剧集');
+
+                // 添加一个角色
+                engine.addCharacter({
+                    role: 'protagonist',
+                    name: '测试男主',
+                    desc: '测试描述',
+                    type: '男主'
+                });
+
+                document.getElementById('result').innerHTML = '<p>项目创建成功!</p>' +
+                    '<p>集数: ' + engine.project.episodes + '</p>' +
+                    '<p>角色数: ' + engine.project.characters.length + '</p>';
+
+                // 尝试生成大纲
+                try {
+                    engine.generateOutline();
+                    document.getElementById('result').innerHTML += '<p style="color:green">大纲生成成功! 共' + engine.project.outline.length + '集</p>';
+                } catch(e) {
+                    document.getElementById('result').innerHTML += '<p style="color:red">大纲生成失败: ' + e.message + '</p>';
+                }
+
+            } catch(error) {
+                document.getElementById('result').innerHTML = '<p style="color:red">错误: ' + error.message + '</p>';
+            }
+        }
+    </script>
+</body>
+</html>
