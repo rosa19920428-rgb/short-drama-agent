@@ -1,0 +1,3 @@
+const CONFIG = {
+    API_KEY: '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'
+};
