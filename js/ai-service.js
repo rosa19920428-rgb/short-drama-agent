@@ -5,10 +5,12 @@
 
 class AIService {
     constructor() {
-        // Kimi API配置 - 预置内置密钥
-        // ⚠️ 重要：将你的Kimi API Key粘贴到下方引号中
-        // 从 https://platform.moonshot.cn/ 获取你的API Key（以 sk- 开头）
-        this.API_KEY = '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';
+        // Kimi API配置 - 优先使用外部配置文件，如果没有则使用默认值
+        // ⚠️ 重要：不要把真实的API Key硬编码在这里上传到GitHub！
+        // 方法1：创建config.js文件（在.gitignore中排除）
+        // 方法2：使用环境变量（需要构建工具）
+        // 方法3：部署后手动在服务器上修改config.js
+        this.API_KEY = (typeof CONFIG !== 'undefined' && CONFIG.API_KEY) ? CONFIG.API_KEY : '';
         this.API_URL = 'https://openrouter.ai/api/v1/chat/completions';
         this.MODEL = 'anthropic/claude-3.5-sonnet';
         // 备用方案：如果Kimi失败，回退到模板
